@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadística Descriptiva Avanzada / ESAP</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Chart.js Boxplot Plugin CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.3.0/build/index.umd.min.js"></script>
+    <!-- PapaParse para procesar CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        esap: {
+                            DEFAULT: '#002D62',
+                            dark: '#001A38',
+                            light: '#335C8D',
+                            accent: '#D4AF37'
+                        },
+                        // Tokens de Things incorporados sin romper la paleta institucional
+                        ink: '#303336',
+                        paper: '#ffffff',
+                        mist: '#f2f5f7',
+                        fog: '#838b96',
+                        ash: '#55606e',
+                        smoke: '#44474b',
+                        silver: '#9299a4',
+                        pebble: '#8e9196',
+                        hairline: '#dfe3e8',
+                        'signal-blue': '#2576eb',
+                        'sky-blue': '#5c9cf5'
+                    },
+                    boxShadow: {
+                        'things-sm': '0 2px 8px rgba(0, 0, 0, 0.1), 0 0 2px rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', sans-serif; background-color: var(--surface-canvas, #f2f5f7); color: #303336; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            section, #chartsContainer > div { break-inside: avoid; }
+        }
+        .interactive-tooltip { display: none !important; }
+        #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 16px); background: #002D62; color: #fff; border-left: 4px solid #D4AF37; padding: 10px 16px; border-radius: 8px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 10000; max-width: 90vw; }
+        #toast.show { opacity: 1; transform: translate(-50%, 0); }
+        #floatTip { position: fixed; left: 0; top: 0; z-index: 9999; max-width: 260px; pointer-events: none; opacity: 0; transition: opacity .15s; text-align: left; }
+        #floatTip.show { opacity: 1; }
+    </style>
+</head>
+<body class="bg-[#f2f5f7] text-[#303336] min-h-screen flex flex-col">
+
+    <!-- Header institucional estilo Tayana / ESAP con sutilezas Things -->
+    <header class="bg-esap text-white shadow-md border-b-4 border-esap-accent no-print">
+        <div class="max-w-[960px] mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="bg-white text-esap font-bold px-3 py-2 rounded shadow text-xl tracking-wider">
+                    ESAP
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold">S.I.D.E.P.</h1>
+                    <p class="text-xs text-gray-200 uppercase tracking-widest">Sistema Integrado de Datos y Estadística para Proyectos</p>
+                </div>
+            </div>
+            <div class="mt-4 md:mt-0 text-right flex items-center gap-3">
+                <span class="inline-block bg-esap-light text-xs px-3 py-1 rounded-full font-medium">Versión 2.0</span>
+                <button onclick="window.print()" class="bg-esap-accent text-esap-dark font-bold px-3 py-1 rounded-[6px] text-xs hover:bg-amber-400 transition shadow">🖨️ Imprimir Reporte</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="flex-grow max-w-[960px] w-full mx-auto px-4 py-[80px] space-y-[80px]">
+
+        <!-- PESTAÑA 1: ENTRADA DE INFORMACIÓN -->
+        <div id="tab1" class="space-y-6">
+            <div class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-esap mb-2">Panel de Carga</h2>
+                    <p class="text-gray-600 text-sm">
+                        Cargue, gestione y analice sus bases de datos institucionales. Procesa variables cuantitativas y cualitativas (medidas estadísticas, tablas de frecuencias y gráficos interactivos).
+                    </p>
+                </div>
+                <div class="w-full md:w-72">
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Entidad Territorial:</label>
+                    <select id="municipalitySelect" class="w-full rounded-[6px] border-[#dfe3e8] border p-2.5 text-sm focus:ring-esap focus:border-esap font-medium text-esap bg-gray-50 shadow-sm">
+                        <option value="Popayán" selected>Popayán</option>
+                        <option value="Santander de Quilichao">Santander de Quilichao</option>
+                        <option value="Puerto Tejada">Puerto Tejada</option>
+                        <option value="Patía (El Bordo)">Patía (El Bordo)</option>
+                        <option value="Piendamó">Piendamó</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 1: Configuración y Datos -->
+            <section class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] space-y-6">
+                <div class="border-b pb-4 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-esap flex items-center">
+                        <span class="bg-esap text-white w-7 h-7 rounded-full inline-flex items-center justify-center text-sm mr-2">1</span>
+                        Carga y Selección de Variable de Estudio
+                    </h3>
+                    <span class="text-xs bg-blue-50 text-esap font-semibold px-3 py-1 rounded-full border border-blue-200">Hoja 1</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contexto del Trabajo</label>
+                        <textarea id="contextInput" rows="3" class="w-full rounded-[6px] border-[#dfe3e8] border p-3 text-sm focus:ring-esap focus:border-esap bg-gray-50" readonly>Trabajo de Inteligencia Artificial y Big Data - Análisis de Proyectos.</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Columna Objetivo a Analizar</label>
+                        <select id="targetColumn" class="w-full rounded-[6px] border-[#dfe3e8] border p-3 text-sm focus:ring-esap focus:border-esap bg-gray-50 font-medium text-esap shadow-sm">
+                            <option value="modalidad_ejecucion" selected>modalidad_ejecucion (Cualitativa)</option>
+                            <option value="presupuesto_ejecutado">presupuesto_ejecutado (Cuantitativa)</option>
+                            <option value="presupuesto_asignado">presupuesto_asignado (Cuantitativa)</option>
+                            <option value="porcentaje_avance">porcentaje_avance (Cuantitativa)</option>
+                            <option value="nombre_proyecto">nombre_proyecto (Cualitativa)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Filtro Rápido de Proyectos</label>
+                        <select id="filterCriteria" class="w-full rounded-[6px] border-[#dfe3e8] border p-3 text-sm focus:ring-esap focus:border-esap bg-gray-50 font-medium text-esap shadow-sm">
+                            <option value="all" selected>Todos los proyectos</option>
+                            <option value="critical">Proyectos Críticos (Avance &lt; 50%)</option>
+                            <option value="good">Proyectos en Buen Estado (Avance ≥ 50%)</option>
+                        </select>
+                        <p class="text-[11px] text-gray-500 mt-1">Filtra los datos cargados antes de correr los cálculos estadísticos.</p>
+                    </div>
+                </div>
+
+                <div class="border-t pt-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="w-full md:w-auto flex-grow">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cargar Archivo CSV (Cualquier Estructura)</label>
+                        <input type="file" id="csvFile" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-[6px] file:border-0 file:text-sm file:font-semibold file:bg-esap file:text-white hover:file:bg-esap-dark cursor-pointer">
+                    </div>
+                    <div class="flex flex-wrap gap-3 w-full md:w-auto">
+                        <button id="manualDataBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2.5 rounded-[6px] text-sm transition">
+                            Digitar Manualmente
+                        </button>
+                        <button id="autoDataBtn" class="bg-amber-600 hover:bg-amber-700 text-white font-medium px-4 py-2.5 rounded-[6px] text-sm transition shadow">
+                            ⚡ Datos Automáticos (Mín. 30)
+                        </button>
+                        <button id="processBtn" class="bg-esap hover:bg-esap-dark text-white font-medium px-6 py-2.5 rounded-[6px] text-sm transition shadow">
+                            Ver Análisis Estadístico &rarr;
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 1.5: Panel de Mapeo Inteligente de Columnas -->
+            <section id="columnMappingSection" class="bg-blue-50 border border-blue-200 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] space-y-4 hidden">
+                <div class="flex justify-between items-center border-b border-blue-200 pb-2">
+                    <div>
+                        <h3 class="text-lg font-semibold text-esap">🛠️ Mapeo Inteligente de Columnas Detectadas</h3>
+                        <p class="text-xs text-gray-600">Asocie cada campo de su archivo con las variables requeridas por el sistema:</p>
+                    </div>
+                    <span class="text-xs bg-blue-600 text-white px-3 py-1 rounded-full font-semibold">Compatible con cualquier CSV</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre / Identificador:</label>
+                        <select id="mapNameCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Modalidad de Ejecución:</label>
+                        <select id="mapModCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Presupuesto Asignado:</label>
+                        <select id="mapAsigCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Presupuesto Ejecutado:</label>
+                        <select id="mapEjecCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
+                    </div>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button id="applyMappingBtn" class="bg-esap hover:bg-esap-dark text-white font-medium px-5 py-2 rounded-[6px] text-xs shadow transition">
+                        Confirmar Mapeo y Sincronizar Datos &rarr;
+                    </button>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: Tabla Interactiva Manual -->
+            <section id="manualSection" class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] hidden space-y-4">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h3 class="text-lg font-semibold text-esap">Registro Manual de Datos</h3>
+                    <button id="closeManualBtn" class="text-gray-400 hover:text-gray-600 text-sm font-bold">&times; Cerrar</button>
+                </div>
+                <div class="overflow-x-auto border rounded-[6px] max-h-96">
+                    <table id="manualTable" class="min-w-full divide-y divide-gray-200 text-left text-xs">
+                        <thead class="bg-gray-100 text-gray-700 uppercase font-semibold">
+                            <tr>
+                                <th class="px-3 py-2">Nombre del Proyecto</th>
+                                <th class="px-3 py-2">Modalidad de Ejecución</th>
+                                <th class="px-3 py-2">Presupuesto Asignado (COP)</th>
+                                <th class="px-3 py-2">Presupuesto Ejecutado (COP)</th>
+                                <th class="px-3 py-2">Porcentaje Avance (%)</th>
+                                <th class="px-3 py-2 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr>
+                                <td class="p-2"><input type="text" class="w-full border rounded-[6px] p-1.5 text-xs proj-name-input" value="Fortalecimiento Vial"></td>
+                                <td class="p-2">
+                                    <select class="w-full border rounded-[6px] p-1.5 text-xs proj-mod-input font-medium text-esap">
+                                        <option value="Administración directa">Administración directa</option>
+                                        <option value="Contrato de Obra" selected>Contrato de Obra</option>
+                                        <option value="Convenio Interadministrativo">Convenio Interadministrativo</option>
+                                        <option value="Licitación Pública">Licitación Pública</option>
+                                        <option value="Selección Abreviada">Selección Abreviada</option>
+                                        <option value="Contratación Directa">Contratación Directa</option>
+                                    </select>
+                                </td>
+                                <td class="p-2"><input type="number" class="w-full border rounded-[6px] p-1.5 text-xs val-asig-input" value="100000000"></td>
+                                <td class="p-2"><input type="number" class="w-full border rounded-[6px] p-1.5 text-xs val-ejec-input" value="85000000"></td>
+                                <td class="p-2"><input type="number" class="w-full border rounded-[6px] p-1.5 text-xs avance-input bg-gray-100 font-bold text-esap" value="85.0" readonly></td>
+                                <td class="p-2 text-center"><button onclick="removeManualRow(this)" class="text-red-600 font-bold">Eliminar</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="flex justify-between items-center pt-2">
+                    <button id="addRowBtn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-[6px] text-xs">+ Agregar Fila</button>
+                    <button id="saveManualTableBtn" class="bg-esap text-white px-5 py-2 rounded-[6px] text-sm shadow">Guardar y Procesar</button>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 2: Vista Previa -->
+            <section id="previewSection" class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] space-y-4">
+                <h3 class="text-lg font-semibold text-esap">Vista Previa de Datos Cargados</h3>
+                <div class="overflow-x-auto max-h-60 border rounded-[6px]">
+                    <table id="previewTable" class="min-w-full divide-y divide-gray-200 text-left text-xs">
+                        <thead class="bg-gray-100 text-gray-700 uppercase font-semibold"></thead>
+                        <tbody class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- PESTAÑA 2: RESULTADOS Y ESTADÍSTICA -->
+        <div id="tab2" class="space-y-[80px] hidden">
+            <div class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] flex flex-col lg:flex-row justify-between items-center gap-4 no-print">
+                <button id="backBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-[6px] text-sm transition">
+                    &larr; Regresar al Ingreso
+                </button>
+
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-[6px] border border-gray-200">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-700 uppercase mb-0.5">Variable en Análisis:</label>
+                        <select id="targetColumnTab2" class="rounded-[6px] border-[#dfe3e8] border p-1.5 text-xs w-60 bg-white font-medium text-esap shadow-sm">
+                            <option value="modalidad_ejecucion" selected>modalidad_ejecucion (Cualitativa)</option>
+                            <option value="presupuesto_ejecutado">presupuesto_ejecutado (Cuantitativa)</option>
+                            <option value="presupuesto_asignado">presupuesto_asignado (Cuantitativa)</option>
+                            <option value="porcentaje_avance">porcentaje_avance (Cuantitativa)</option>
+                            <option value="nombre_proyecto">nombre_proyecto (Cualitativa)</option>
+                        </select>
+                    </div>
+                    <button id="applyVarChangeBtn" class="bg-esap hover:bg-esap-dark text-white font-medium px-3.5 py-1.5 rounded-[6px] text-xs transition self-end">
+                        Actualizar
+                    </button>
+                </div>
+
+                <button id="exportExcelBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-[6px] text-sm transition shadow flex items-center gap-2">
+                    📊 Exportar Reporte Completo (Excel)
+                </button>
+            </div>
+
+            <!-- SECCIÓN 3: KPIs Ejecutivos Financieros -->
+            <section class="space-y-6">
+                <div class="border-b pb-2">
+                    <h3 class="text-lg font-semibold text-esap flex items-center">
+                        <span class="bg-esap text-white w-7 h-7 rounded-full inline-flex items-center justify-center text-sm mr-2">2</span>
+                        Indicadores Clave de Gestión y Ejecución (KPIs Interactivos)
+                    </h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="kpiGrid"></div>
+            </section>
+
+            <!-- SECCIÓN 4: Medidas Estadísticas -->
+            <section class="space-y-6">
+                <div class="border-b pb-2">
+                    <h3 id="cardsSectionTitle" class="text-lg font-semibold text-esap flex items-center">
+                        <span class="bg-esap text-white w-7 h-7 rounded-full inline-flex items-center justify-center text-sm mr-2">3</span>
+                        Medidas Estadísticas Descriptivas
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="cardsGrid"></div>
+            </section>
+
+           
+            <!-- SECCIÓN 5: Tabla de Frecuencias con Paginación -->
+            <section class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] space-y-4">
+                <div class="border-b pb-2 flex justify-between items-center">
+                    <h3 id="freqTableTitle" class="text-lg font-semibold text-esap">Tabla de Frecuencias</h3>
+                    <span id="freqTypeBadge" class="text-xs bg-blue-50 text-esap px-3 py-1 rounded-full font-semibold">Análisis Estadístico</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="freqTable" class="min-w-full divide-y divide-gray-200 text-sm text-left">
+                        <thead id="freqTableHead" class="bg-esap text-white"></thead>
+                        <tbody class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                <!-- Controles de Paginación -->
+                <div id="paginationContainer" class="flex justify-between items-center pt-3 border-t text-xs text-gray-600">
+                    <div id="paginationInfo">Mostrando 0 de 0 ítems</div>
+                    <div class="flex items-center space-x-2">
+                        <button id="prevPageBtn" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-[6px] font-medium disabled:opacity-50" disabled>&larr; Anterior</button>
+                        <span id="pageIndicator" class="font-bold text-esap">Página 1 de 1</span>
+                        <button id="nextPageBtn" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-[6px] font-medium disabled:opacity-50" disabled>Siguiente &rarr;</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 6: Gráficos Interactivos -->
+            <section class="space-y-6">
+                <div class="border-b pb-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                    <div class="relative group cursor-pointer inline-flex items-center">
+                        <h3 class="text-lg font-semibold text-esap flex items-center">
+                            <span class="bg-esap text-white w-7 h-7 rounded-full inline-flex items-center justify-center text-sm mr-2">4</span>
+                            Visualización Gráfica Estadísticas
+                        </h3>
+                        <span class="ml-3 bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-medium inline-flex items-center shadow-sm">ℹ️ Explicación</span>
+                        <div class="interactive-tooltip absolute bottom-full left-0 mb-2 w-80 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-2xl z-30 text-left font-normal leading-relaxed">
+                            <p class="font-bold text-amber-300 mb-1 text-sm">📊 Visualización de Datos</p>
+                            <p class="text-gray-200">Para variables cualitativas como <strong>Modalidad de Ejecución</strong>, se presentan diagramas de barras y gráficos circulares. Para cuantitativas se despliega un Boxplot estadístico profesional.</p>
+                        </div>
+                    </div>
+                    <div id="chartTypeSelectorContainer" class="no-print flex items-center gap-2 bg-white p-1.5 rounded-[6px] border shadow-sm">
+                        <span class="text-xs font-semibold text-gray-600 px-2">Tipo Gráfico Derecho:</span>
+                        <select id="chartTypeSelector" class="text-xs border rounded-[6px] p-1 font-medium text-esap bg-gray-50">
+                            <option value="line" selected>Polígono de Frecuencias</option>
+                            <option value="bar">Gráfico de Barras</option>
+                            <option value="pie">Gráfico de Pastel</option>
+                            <option value="doughnut">Gráfico Donut</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="interpBox" class="hidden bg-blue-50 border-l-4 border-[#D4AF37] rounded-[6px] p-4 text-sm text-gray-700 space-y-1"></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="chartsContainer">
+                    <div class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8]">
+                        <h4 id="chart1Title" class="font-semibold text-gray-700 mb-4 text-center text-sm">Histograma / Distribución Principal</h4>
+                        <div class="relative h-64">
+                            <canvas id="histogramChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8]">
+                        <h4 id="chart2Title" class="font-semibold text-gray-700 mb-4 text-center text-sm">Distribución Secundaria</h4>
+                        <div class="relative h-64">
+                            <canvas id="secondaryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8]" id="boxplotCard">
+                        <h4 id="chart3Title" class="font-semibold text-gray-700 mb-4 text-center text-sm">Cajas y Bigotes Real (Boxplot)</h4>
+                        <div class="relative h-64">
+                            <canvas id="boxplotChart"></canvas>
+                        </div>
+                        <p class="text-[11px] text-gray-500 text-center mt-3 leading-snug">Caja: Q<sub>1</sub>–Q<sub>3</sub> · Línea: mediana · Punto dorado: media · Bigotes: límite 1,5×RIC · Puntos rojos: atípicos.<br>Pasa el cursor para ver Mín, Q1, Mediana, Q3 y Máx.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 7: Conclusiones Inteligentes -->
+            <section class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] space-y-3">
+                <h3 class="text-lg font-semibold text-esap">Interpretación y Conclusiones Estadísticas Gerenciales</h3>
+                <div id="conclusionsText" class="text-sm text-gray-700 space-y-3 bg-gray-50 p-4 rounded-[6px] border"></div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- Footer flotante minimalista estilo Things -->
+    <footer class="bg-transparent text-[#838b96] py-12 mt-16 text-center text-xs no-print">
+        <div class="max-w-[960px] mx-auto px-4 flex flex-col items-center justify-center space-y-2">
+            <p class="font-medium text-[#55606e]">Sistema Integrado de Datos y Estadística para Proyectos</p>
+            <p class="text-[#9299a4]">Diseño minimalista institucional con estética editorial.</p>
+        </div>
+    </footer>
+
+    <!-- Lógica de Funcionamiento Estadístico -->
+    <script>
+        const MODALIDADES = [
+            "Administración directa",
+            "Contrato de Obra",
+            "Convenio Interadministrativo",
+            "Licitación Pública",
+            "Selección Abreviada",
+            "Contratación Directa"
+        ];
+
+        const VAR_LABELS = {
+            modalidad_ejecucion: 'Modalidad de ejecución', presupuesto_ejecutado: 'Presupuesto ejecutado',
+            presupuesto_asignado: 'Presupuesto asignado', porcentaje_avance: '% de avance', nombre_proyecto: 'Nombre del proyecto'
+        };
+        const esc = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        function parseNum(v) {
+            if (typeof v === 'number') return isFinite(v) ? v : 0;
+            if (v == null) return 0;
+            let t = String(v).replace(/[^\d.,-]/g, ''); if (!t) return 0;
+            const hasC = t.includes(','), hasD = t.includes('.');
+            if (hasC && hasD) t = t.lastIndexOf(',') > t.lastIndexOf('.') ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '');
+            else if (hasC) t = /^-?\d{1,3}(,\d{3})+$/.test(t) ? t.replace(/,/g, '') : t.replace(',', '.');
+            else if (hasD && /^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+            const n = parseFloat(t); return isNaN(n) ? 0 : n;
+        }
+
+        // Burbuja flotante única: se posiciona dentro de la pantalla, se voltea si no cabe arriba y funciona con toque/teclado
+        const floatTip = document.createElement('div');
+        floatTip.id = 'floatTip';
+        floatTip.className = 'bg-gray-900 text-white text-xs rounded-[6px] p-3 shadow-2xl leading-relaxed';
+        document.body.appendChild(floatTip);
+        let tipHost = null;
+        const isTouch = () => window.matchMedia('(hover: none)').matches;
+        function showTip(host) {
+            const src = host.querySelector('.interactive-tooltip'); if (!src) return;
+            tipHost = host; floatTip.innerHTML = src.innerHTML;
+            floatTip.style.left = '0px'; floatTip.style.top = '0px'; floatTip.classList.add('show');
+            const r = host.getBoundingClientRect(), t = floatTip.getBoundingClientRect();
+            const left = Math.min(Math.max(8, r.left + r.width / 2 - t.width / 2), window.innerWidth - t.width - 8);
+            let top = r.top - t.height - 10; if (top < 8) top = r.bottom + 10;
+            floatTip.style.left = left + 'px'; floatTip.style.top = top + 'px';
+        }
+        function hideTip() { tipHost = null; floatTip.classList.remove('show'); }
+        document.addEventListener('mouseover', (e) => { if (isTouch()) return; const h = e.target.closest('.group'); if (h) { if (h !== tipHost) showTip(h); } else hideTip(); });
+        document.addEventListener('focusin', (e) => { const h = e.target.closest('.group'); if (h) showTip(h); });
+        document.addEventListener('focusout', hideTip);
+        document.addEventListener('click', (e) => { if (!isTouch()) return; const h = e.target.closest('.group'); if (h && h !== tipHost) showTip(h); else hideTip(); });
+        window.addEventListener('scroll', hideTip, { passive: true });
+
+        function notify(msg) {
+            let t = document.getElementById('toast');
+            if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+            t.textContent = msg; t.classList.add('show');
+            clearTimeout(notify._t); notify._t = setTimeout(() => t.classList.remove('show'), 3200);
+        }
+        let lastStats = [];
+        let rawData = [];
+        let filteredData = [];
+        let rawCsvParsedRows = [];
+        let csvHeaders = [];
+        let histChartInstance = null;
+        let secChartInstance = null;
+        let boxChartInstance = null;
+        let selectedMunicipality = "Popayán";
+
+        let freqTableRowsCache = [];
+        let currentFreqPage = 1;
+        const itemsPerPage = 10;
+
+        document.getElementById('municipalitySelect').addEventListener('change', (e) => {
+            selectedMunicipality = e.target.value;
+            document.getElementById('contextInput').value = `Estadística Descriptiva - Proyectos en el municipio de ${selectedMunicipality}.`;
+        });
+
+        function formatCOP(val) {
+            return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+        }
+
+        document.getElementById('targetColumn').addEventListener('change', (e) => {
+            document.getElementById('targetColumnTab2').value = e.target.value;
+        });
+        document.getElementById('targetColumnTab2').addEventListener('change', (e) => {
+            document.getElementById('targetColumn').value = e.target.value;
+            if (rawData.length > 0) applyFiltersAndRun();
+        });
+
+        document.getElementById('applyVarChangeBtn').addEventListener('click', () => {
+            if (rawData.length === 0) { notify("No hay datos cargados."); return; }
+            applyFiltersAndRun();
+            notify("¡Análisis actualizado correctamente!");
+        });
+
+        document.getElementById('chartTypeSelector').addEventListener('change', () => {
+            if (rawData.length > 0) applyFiltersAndRun();
+        });
+
+        document.addEventListener('input', function (e) {
+            if (e.target.classList.contains('val-asig-input') || e.target.classList.contains('val-ejec-input')) {
+                const row = e.target.closest('tr');
+                const asig = parseFloat(row.querySelector('.val-asig-input').value) || 0;
+                const ejec = parseFloat(row.querySelector('.val-ejec-input').value) || 0;
+                const avanceInput = row.querySelector('.avance-input');
+                if (asig > 0) {
+                    let porcentaje = ((ejec / asig) * 100).toFixed(1);
+                    avanceInput.value = porcentaje;
+                } else {
+                    avanceInput.value = 0;
+                }
+            }
+        });
+
+        document.getElementById('manualDataBtn').addEventListener('click', () => {
+            document.getElementById('manualSection').classList.remove('hidden');
+        });
+        document.getElementById('closeManualBtn').addEventListener('click', () => {
+            document.getElementById('manualSection').classList.add('hidden');
+        });
+
+        document.getElementById('addRowBtn').addEventListener('click', () => {
+            const tbody = document.querySelector('#manualTable tbody');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td class="p-2"><input type="text" class="w-full border rounded-[6px] p-1.5 text-xs proj-name-input" value="Nuevo Proyecto"></td>
+                <td class="p-2">
+                    <select class="w-full border rounded-[6px] p-1.5 text-xs proj-mod-input font-medium text-esap">
+                        <option value="Administración directa">Administración directa</option>
+                        <option value="Contrato de Obra" selected>Contrato de Obra</option>
+                        <option value="Convenio Interadministrativo">Convenio Interadministrativo</option>
+                        <option value="Licitación Pública">Licitación Pública</option>
+                        <option value="Selección Abreviada">Selección Abreviada</option>
+                        <option value="Contratación Directa">Contratación Directa</option>
+                    </select>
+                </td>
+                <td class="p-2"><input type="number" class="w-full border rounded-[6px] p-1.5 text-xs val-asig-input" value="50000000"></td>
+                <td class="p-2"><input type="number" class="w-full border rounded-[6px] p-1.5 text-xs val-ejec-input" value="40000000"></td>
+                <td class="p-2"><input type="number" class="w-full border rounded-[6px] p-1.5 text-xs avance-input bg-gray-100 font-bold text-esap" value="80.0" readonly></td>
+                <td class="p-2 text-center"><button onclick="removeManualRow(this)" class="text-red-600 font-bold">Eliminar</button></td>
+            `;
+            tbody.appendChild(newRow);
+        });
+
+        function removeManualRow(btn) {
+            if(document.querySelectorAll('#manualTable tbody tr').length > 1) { btn.closest('tr').remove(); }
+            else { notify("Debe mantener al menos una fila."); }
+        }
+
+        // Datos Automáticos con la variable Modalidad de Ejecución
+        document.getElementById('autoDataBtn').addEventListener('click', () => {
+            let inputVal = prompt("¿Cuántos datos automáticos deseas generar? (Mínimo 30):", "30");
+            if (inputVal === null) return;
+            let count = parseInt(inputVal);
+            if (isNaN(count) || count < 30) count = 30;
+
+            const nombres = ["Acueducto Veredal", "Parque Biosaludable", "Dotación Escolar", "Vías Rurales", "Seguridad Alimentaria", "Puesto de Salud", "Emprendimiento Local", "Polideportivo Municipal", "Gestión Ambiental", "Alumbrado Público"];
+            let data = [];
+            for (let i = 1; i <= count; i++) {
+                let asig = Math.floor(Math.random() * (450000000 - 40000000 + 1)) + 40000000;
+                let ejec = Math.round(asig * (Math.random() * 0.85 + 0.1));
+                let mod = MODALIDADES[Math.floor(Math.random() * MODALIDADES.length)];
+                data.push({
+                    nombre_proyecto: nombres[(i - 1) % nombres.length] + ` ${i}`,
+                    modalidad_ejecucion: mod,
+                    presupuesto_asignado: asig,
+                    presupuesto_ejecutado: ejec,
+                    porcentaje_avance: Number(((ejec / asig) * 100).toFixed(1))
+                });
+            }
+            rawData = data;
+            document.getElementById('columnMappingSection').classList.add('hidden');
+            applyFiltersAndRun();
+            displayPreview(rawData);
+            notify(`¡Se generaron exitosamente ${count} registros automáticos para ${selectedMunicipality}!`);
+        });
+
+        document.getElementById('saveManualTableBtn').addEventListener('click', () => {
+            const rows = document.querySelectorAll('#manualTable tbody tr');
+            let dataArr = [];
+            rows.forEach((row) => {
+                dataArr.push({
+                    nombre_proyecto: row.querySelector('.proj-name-input').value.trim(),
+                    modalidad_ejecucion: row.querySelector('.proj-mod-input').value,
+                    presupuesto_asignado: Number(row.querySelector('.val-asig-input').value) || 0,
+                    presupuesto_ejecutado: Number(row.querySelector('.val-ejec-input').value) || 0,
+                    porcentaje_avance: Number(row.querySelector('.avance-input').value) || 0
+                });
+            });
+            rawData = dataArr;
+            applyFiltersAndRun();
+            displayPreview(rawData);
+            document.getElementById('manualSection').classList.add('hidden');
+            notify(`¡Guardados ${rawData.length} registros con éxito!`);
+        });
+
+        // CARGA DE CSV
+        document.getElementById('csvFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            Papa.parse(file, {
+                header: true, dynamicTyping: true, skipEmptyLines: true,
+                complete: function(results) {
+                    if (!results.data || results.data.length === 0) {
+                        notify("El archivo CSV está vacío.");
+                        return;
+                    }
+                    rawCsvParsedRows = results.data;
+                    csvHeaders = Object.keys(rawCsvParsedRows[0]);
+                    const mapName = document.getElementById('mapNameCol');
+                    const mapMod = document.getElementById('mapModCol');
+                    const mapAsig = document.getElementById('mapAsigCol');
+                    const mapEjec = document.getElementById('mapEjecCol');
+                    mapName.innerHTML = ''; mapMod.innerHTML = ''; mapAsig.innerHTML = ''; mapEjec.innerHTML = '';
+
+                    csvHeaders.forEach(h => {
+                        let opt1 = document.createElement('option'); opt1.value = h; opt1.textContent = h;
+                        let opt2 = document.createElement('option'); opt2.value = h; opt2.textContent = h;
+                        let opt3 = document.createElement('option'); opt3.value = h; opt3.textContent = h;
+                        let opt4 = document.createElement('option'); opt4.value = h; opt4.textContent = h;
+                        mapName.appendChild(opt1); mapMod.appendChild(opt2); mapAsig.appendChild(opt3); mapEjec.appendChild(opt4);
+                    });
+                    const pick = (sel, inc, exc = []) => { const i = csvHeaders.findIndex(h => { const l = String(h).toLowerCase(); return inc.some(k => l.includes(k)) && !exc.some(k => l.includes(k)); }); if (i >= 0) sel.selectedIndex = i; };
+                    pick(mapName, ['nombre', 'proyecto', 'item'], ['modalid', 'presupuesto']);
+                    pick(mapMod, ['modalid', 'tipo', 'contrat'], ['presupuesto', 'valor']);
+                    pick(mapAsig, ['asignad', 'presupuesto', 'valor'], ['ejecut', 'pagad']);
+                    pick(mapEjec, ['ejecutad', 'ejecut', 'pagad'], ['modalid', 'ejecuc']);
+                    document.getElementById('columnMappingSection').classList.remove('hidden');
+                    notify(`Archivo CSV cargado. Confirme el mapeo de campos abajo.`);
+                }
+            });
+        });
+
+        document.getElementById('applyMappingBtn').addEventListener('click', () => {
+            const nameCol = document.getElementById('mapNameCol').value;
+            const modCol = document.getElementById('mapModCol').value;
+            const asigCol = document.getElementById('mapAsigCol').value;
+            const ejecCol = document.getElementById('mapEjecCol').value;
+
+            rawData = rawCsvParsedRows.map((row, idx) => {
+                let asigVal = parseNum(row[asigCol]);
+                let ejecVal = parseNum(row[ejecCol]);
+                let avanceVal = asigVal > 0 ? Number(((ejecVal / asigVal) * 100).toFixed(1)) : 0;
+                let modVal = row[modCol] ? String(row[modCol]).trim() : MODALIDADES[idx % MODALIDADES.length];
+                return {
+                    nombre_proyecto: row[nameCol] !== undefined ? String(row[nameCol]) : `Proyecto ${idx + 1}`,
+                    modalidad_ejecucion: modVal,
+                    presupuesto_asignado: asigVal,
+                    presupuesto_ejecutado: ejecVal,
+                    porcentaje_avance: avanceVal
+                };
+            });
+            applyFiltersAndRun();
+            displayPreview(rawData);
+            validateCsv(nameCol, asigCol, ejecCol);
+            document.getElementById('columnMappingSection').classList.add('hidden');
+            notify(`¡Mapeo exitoso! Procesados ${rawData.length} registros.`);
+        });
+
+        document.getElementById('processBtn').addEventListener('click', () => {
+            if (rawData.length === 0) { notify("Cargue un archivo CSV, use datos automáticos o digite datos manualmente."); return; }
+            document.getElementById('tab1').classList.add('hidden');
+            document.getElementById('tab2').classList.remove('hidden');
+            applyFiltersAndRun(); // se calcula con la pestaña ya visible para que las gráficas midan bien
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        document.getElementById('backBtn').addEventListener('click', () => {
+            document.getElementById('tab2').classList.add('hidden');
+            document.getElementById('tab1').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        function displayPreview(data) {
+            saveState();
+            document.getElementById('previewSection').classList.remove('hidden');
+            document.querySelector('#previewTable thead').innerHTML = `
+                <tr>
+                    <th class="px-3 py-2">Proyecto / Ítem</th>
+                    <th class="px-3 py-2">Modalidad de Ejecución</th>
+                    <th class="px-3 py-2">Asignado</th>
+                    <th class="px-3 py-2">Ejecutado</th>
+                    <th class="px-3 py-2">Avance (%)</th>
+                </tr>`;
+            document.querySelector('#previewTable tbody').innerHTML = data.slice(0, 50).map(r => 
+                `<tr>
+                    <td class="px-3 py-2 font-medium">${esc(r.nombre_proyecto)}</td>
+                    <td class="px-3 py-2"><span class="bg-blue-100 text-esap text-[11px] px-2 py-0.5 rounded-[6px] font-semibold">${esc(r.modalidad_ejecucion || 'N/A')}</span></td>
+                    <td class="px-3 py-2">${formatCOP(r.presupuesto_asignado)}</td>
+                    <td class="px-3 py-2">${formatCOP(r.presupuesto_ejecutado)}</td>
+                    <td class="px-3 py-2 font-bold">${r.porcentaje_avance}%</td>
+                </tr>`
+            ).join('');
+        }
+
+        function applyFiltersAndRun() {
+            const filterCrit = document.getElementById('filterCriteria').value;
+            if (filterCrit === 'critical') {
+                filteredData = rawData.filter(r => r.porcentaje_avance < 50);
+            } else if (filterCrit === 'good') {
+                filteredData = rawData.filter(r => r.porcentaje_avance >= 50);
+            } else {
+                filteredData = [...rawData];
+            }
+            if (!document.getElementById('tab2').classList.contains('hidden')) runAnalysis();
+        }
+
+        function reportExtra() {
+            const stats = lastStats.length ? `<h3>Medidas descriptivas</h3><table>${lastStats.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</table>` : '';
+            const head = document.getElementById('freqTableHead').innerHTML;
+            return stats + (freqTableRowsCache.length ? `<h3>Tabla de frecuencias</h3><table>${head}${freqTableRowsCache.join('')}</table>` : '');
+        }
+        // EXCEL EXPORT
+        function exportExcelLegacy() {
+            if(filteredData.length === 0) { notify("No hay datos para exportar."); return; }
+            const totalAsig = filteredData.reduce((acc, r) => acc + (Number(r.presupuesto_asignado) || 0), 0);
+            const totalEjec = filteredData.reduce((acc, r) => acc + (Number(r.presupuesto_ejecutado) || 0), 0);
+            let globalExecution = totalAsig > 0 ? ((totalEjec / totalAsig) * 100).toFixed(1) : 0;
+
+            let htmlContent = `<html lang="es"><head><meta charset="UTF-8"><style>body{font-family:Arial;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #bdc3c7;padding:8px;font-size:11pt;}th{background:#002D62;color:white;}</style></head><body>
+                <h2>Reporte Estadístico ESAP - ${selectedMunicipality}</h2>
+                <table><tr><th>Métrica</th><th>Valor</th></tr>
+                <tr><td>Presupuesto Asignado Global</td><td>${formatCOP(totalAsig)}</td></tr>
+                <tr><td>Presupuesto Ejecutado Global</td><td>${formatCOP(totalEjec)}</td></tr>
+                <tr><td>Ejecución Global</td><td>${globalExecution}%</td></tr></table>${reportExtra()}
+            </body></html>`;
+
+            let blob = new Blob(['\ufeff' + htmlContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url; a.download = `reporte_${selectedMunicipality}.xls`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        async function exportExcelXlsx() {
+            const totalAsig = filteredData.reduce((acc, r) => acc + (Number(r.presupuesto_asignado) || 0), 0);
+            const totalEjec = filteredData.reduce((acc, r) => acc + (Number(r.presupuesto_ejecutado) || 0), 0);
+            const globalExec = totalAsig > 0 ? Number(((totalEjec / totalAsig) * 100).toFixed(1)) : 0;
+            const COP = '"$" #,##0';
+            const wb = new ExcelJS.Workbook(); wb.creator = 'ESAP';
+            const styleHead = (row) => row.eachCell(c => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002D62' } }; });
+
+            // Hoja 2: datos cargados (pestaña 1)
+            const ws2 = wb.addWorksheet('Datos cargados');
+            const keys = []; rawData.forEach(r => Object.keys(r).forEach(k => { if (!keys.includes(k)) keys.push(k); }));
+            ws2.columns = keys.map(k => ({ width: k === 'nombre_proyecto' ? 44 : 20 }));
+            styleHead(ws2.addRow(keys));
+            rawData.forEach(r => {
+                const row = ws2.addRow(keys.map(k => r[k] ?? ''));
+                keys.forEach((k, i) => { if (/^presupuesto/.test(k)) row.getCell(i + 1).numFmt = COP; });
+            });
+            ws2.views = [{ state: 'frozen', ySplit: 1 }];
+
+            // Hoja 1: Resumen + medidas descriptivas
+            const ws1 = wb.addWorksheet('Resumen'); ws1.columns = [{ width: 42 }, { width: 32 }];
+            ws1.addRow([`Reporte Estadístico ESAP - ${selectedMunicipality}`]).font = { bold: true, size: 14 };
+            ws1.addRow([]);
+            styleHead(ws1.addRow(['Métrica', 'Valor']));
+            ws1.addRow(['Registros cargados', rawData.length]);
+            ws1.addRow(['Registros analizados (según filtro)', filteredData.length]);
+            ws1.addRow(['Presupuesto Asignado Global', totalAsig]).getCell(2).numFmt = COP;
+            ws1.addRow(['Presupuesto Ejecutado Global', totalEjec]).getCell(2).numFmt = COP;
+            ws1.addRow(['Ejecución Global', globalExec / 100]).getCell(2).numFmt = '0.0%';
+            if (lastStats.length) {
+                ws1.addRow([]); ws1.addRow(['Medidas descriptivas']).font = { bold: true };
+                styleHead(ws1.addRow(['Medida', 'Valor']));
+                lastStats.forEach(r => ws1.addRow([r[0], r[1]]));
+            }
+            if (lastInterp.length) { ws1.addRow([]); ws1.addRow(['Interpretación automática']).font = { bold: true }; lastInterp.forEach(l => ws1.addRow([l])); }
+
+            // Hoja 3: tabla de frecuencias
+            if (freqTableRowsCache.length) {
+                const ws3 = wb.addWorksheet('Frecuencias');
+                const hs = [...document.querySelectorAll('#freqTableHead th')].map(th => th.textContent.trim());
+                ws3.columns = hs.map(() => ({ width: 22 }));
+                styleHead(ws3.addRow(hs));
+                const tb = document.createElement('tbody'); tb.innerHTML = freqTableRowsCache.join('');
+                tb.querySelectorAll('tr').forEach(tr => ws3.addRow([...tr.children].map(td => td.textContent.trim())));
+            }
+
+            // Hoja 4: gráficos (pestaña 3)
+            const charts = [[histChartInstance, 'chart1Title'], [secChartInstance, 'chart2Title'], [boxChartInstance, 'chart3Title']]
+                .filter(([ch]) => ch && ch.canvas && ch.canvas.width > 0 && ch.canvas.offsetParent !== null);
+            if (charts.length) {
+                const ws4 = wb.addWorksheet('Gráficos'); ws4.getColumn(1).width = 90;
+                let r = 1;
+                charts.forEach(([ch, titleId]) => {
+                    const cv = ch.canvas, tmp = document.createElement('canvas');
+                    tmp.width = cv.width; tmp.height = cv.height;
+                    const x = tmp.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, tmp.width, tmp.height); x.drawImage(cv, 0, 0);
+                    const w = 560, h = Math.round(w * cv.height / cv.width);
+                    ws4.getCell(r, 1).value = document.getElementById(titleId).textContent.trim(); ws4.getCell(r, 1).font = { bold: true, size: 12 };
+                    const id = wb.addImage({ base64: tmp.toDataURL('image/png'), extension: 'png' });
+                    ws4.addImage(id, { tl: { col: 0, row: r }, ext: { width: w, height: h } });
+                    r += Math.ceil(h / 20) + 3;
+                });
+            }
+
+            const buf = await wb.xlsx.writeBuffer();
+            const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `reporte_${selectedMunicipality}.xlsx`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+        }
+
+        document.getElementById('exportExcelBtn').addEventListener('click', async () => {
+            if (filteredData.length === 0) { notify("No hay datos para exportar."); return; }
+            if (typeof ExcelJS === 'undefined') { exportExcelLegacy(); notify("Sin conexión a la librería de Excel: se exportó la versión básica (.xls)."); return; }
+            try { await exportExcelXlsx(); notify("Excel generado con datos, estadísticas y gráficos."); }
+            catch (e) { console.error(e); notify("No se pudo generar el Excel: " + e.message); }
+        });
+
+        function renderFreqTablePage() {
+            const freqTableBody = document.querySelector('#freqTable tbody');
+            freqTableBody.innerHTML = '';
+            const totalRows = freqTableRowsCache.length;
+            if (totalRows === 0) return;
+            const totalPages = Math.ceil(totalRows / itemsPerPage);
+            if (currentFreqPage > totalPages) currentFreqPage = totalPages;
+            if (currentFreqPage < 1) currentFreqPage = 1;
+
+            const startIndex = (currentFreqPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, totalRows);
+            freqTableRowsCache.slice(startIndex, endIndex).forEach(rowHtml => { freqTableBody.innerHTML += rowHtml; });
+
+            document.getElementById('paginationInfo').innerText = `Mostrando ítems ${startIndex + 1} a ${endIndex} de ${totalRows}`;
+            document.getElementById('pageIndicator').innerText = `Página ${currentFreqPage} de ${totalPages}`;
+            document.getElementById('prevPageBtn').disabled = currentFreqPage === 1;
+            document.getElementById('nextPageBtn').disabled = currentFreqPage === totalPages;
+        }
+
+        document.getElementById('prevPageBtn').addEventListener('click', () => { if (currentFreqPage > 1) { currentFreqPage--; renderFreqTablePage(); } });
+        document.getElementById('nextPageBtn').addEventListener('click', () => { if (currentFreqPage < Math.ceil(freqTableRowsCache.length / itemsPerPage)) { currentFreqPage++; renderFreqTablePage(); } });
+
+        function runAnalysis() {
+            const targetCol = document.getElementById('targetColumnTab2').value.trim();
+            const cardsGrid = document.getElementById('cardsGrid');
+            const kpiGrid = document.getElementById('kpiGrid');
+            freqTableRowsCache = [];
+            currentFreqPage = 1;
+
+            const nTotal = filteredData.length;
+            if (nTotal === 0) {
+                destroyCharts(); kpiGrid.innerHTML = cardsGrid.innerHTML = ''; lastStats = []; setInterp(null);
+                document.querySelector('#freqTable tbody').innerHTML = '';
+                document.getElementById('conclusionsText').innerHTML = '<p>No hay proyectos que cumplan el filtro seleccionado.</p>';
+                return;
+            }
+
+            // KPI Financieros
+            const totalAsig = filteredData.reduce((acc, r) => acc + (Number(r.presupuesto_asignado) || 0), 0);
+            const totalEjec = filteredData.reduce((acc, r) => acc + (Number(r.presupuesto_ejecutado) || 0), 0);
+            let globalExecution = totalAsig > 0 ? parseFloat(((totalEjec / totalAsig) * 100).toFixed(1)) : 0;
+            let brechaFaltante = Math.max(0, 100 - globalExecution).toFixed(1);
+            const criticalCount = filteredData.filter(r => r.porcentaje_avance < 50).length;
+            let criticalPercentage = ((criticalCount / nTotal) * 100).toFixed(1);
+
+            kpiGrid.innerHTML = `
+                <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-esap">
+                    <p class="text-xs text-gray-500">Presupuesto Asignado Global</p>
+                    <p class="text-md font-bold text-esap mt-1">${formatCOP(totalAsig)}</p>
+                </div>
+                <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-emerald-600 relative group cursor-pointer">
+                    <p class="text-xs text-gray-500">Presupuesto Ejecutado Global</p>
+                    <p class="text-md font-bold text-emerald-700 mt-1">${formatCOP(totalEjec)}</p>
+                    <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                        <p class="font-bold text-amber-300">💡 Brecha Financiera</p>
+                        <p class="mt-1">${totalEjec <= totalAsig ? `Falta ejecutar <strong>${brechaFaltante}%</strong> (${formatCOP(totalAsig - totalEjec)}) del presupuesto asignado.` : `Se ejecutó <strong>${formatCOP(totalEjec - totalAsig)}</strong> por encima de lo asignado (sobreejecución).`}</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-amber-500 relative group cursor-pointer">
+                    <p class="text-xs text-gray-500">% Ejecución Financiera</p>
+                    <p class="text-xl font-bold text-amber-600 mt-1">${globalExecution}%</p>
+                    <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                        <p class="font-bold text-amber-300">🎯 Indicador de Meta</p>
+                        <p class="mt-1">Se ha ejecutado el <strong>${globalExecution}%</strong> de lo asignado; ${Number(brechaFaltante) > 0 ? `faltan <strong>${brechaFaltante}</strong> puntos para la meta del 100%.` : 'la meta del 100% fue alcanzada.'}</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-red-500 relative group cursor-pointer">
+                    <p class="text-xs text-gray-500">Proyectos Críticos (&lt;50%)</p>
+                    <p class="text-xl font-bold text-red-600 mt-1">${criticalCount} <span class="text-xs text-gray-500 font-normal">(${criticalPercentage}%)</span></p>
+                    <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                        <p class="font-bold text-red-300">⚠️ Estado de Alerta</p>
+                        <p class="mt-1"><strong>${criticalCount}</strong> de ${nTotal} proyectos (${criticalPercentage}%) tienen ejecución inferior al 50% y requieren seguimiento prioritario.</p>
+                    </div>
+                </div>
+            `;
+
+            const isQualitative = (targetCol === 'modalidad_ejecucion' || targetCol === 'nombre_proyecto');
+            const varLabel = VAR_LABELS[targetCol] || targetCol;
+
+            if (isQualitative) {
+                // ANALISIS CUALITATIVO (Modalidad de Ejecución / Nombre Proyecto)
+                document.getElementById('freqTypeBadge').innerText = "Variable Cualitativa (Frecuencias Categóricas)";
+                document.getElementById('freqTableTitle').innerText = `Tabla de Frecuencias: ${varLabel}`;
+                document.getElementById('cardsSectionTitle').innerHTML = `<span class="bg-esap text-white w-7 h-7 rounded-full inline-flex items-center justify-center text-sm mr-2">3</span> Medidas Descriptivas Cualitativas`;
+
+                // Conteo de frecuencias por categoría
+                let counts = {};
+                filteredData.forEach(row => {
+                    let val = row[targetCol] ? String(row[targetCol]).trim() : 'Sin Especificar';
+                    counts[val] = (counts[val] || 0) + 1;
+                });
+
+                // Ordenar por mayor frecuencia
+                let sortedCategories = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+                let maxFreq = counts[sortedCategories[0]] || 0;
+                const modes = sortedCategories.filter(c => counts[c] === maxFreq);
+                let moda = modes.length === 1 ? modes[0] : (modes.length <= 3 ? modes.join(' / ') : `Multimodal (${modes.length} categorías empatadas)`);
+                let modaPorcentaje = ((maxFreq / nTotal) * 100).toFixed(2);
+                lastStats = [['Variable', varLabel], ['Observaciones (n)', nTotal], ['Moda', moda], ['Frecuencia de la moda', maxFreq + ' (' + modaPorcentaje + '%)']];
+                setInterp([`La categoría más frecuente de <b>${esc(varLabel)}</b> es <b>${esc(moda)}</b>, con ${maxFreq} registros (${modaPorcentaje}% de ${nTotal}).`, `Hay ${sortedCategories.length} categoría(s) distinta(s) en total.`]);
+
+                // Configurar encabezado de tabla cualitativa
+                document.getElementById('freqTableHead').innerHTML = `
+                    <tr>
+                        <th class="px-4 py-2">Categoría / Modalidad</th>
+                        <th class="px-4 py-2">Frecuencia Absoluta (f<sub>i</sub>)</th>
+                        <th class="px-4 py-2">Frec. Acumulada (F<sub>i</sub>)</th>
+                        <th class="px-4 py-2">Frecuencia Relativa (h<sub>i</sub>)</th>
+                        <th class="px-4 py-2">Porcentaje (%)</th>
+                    </tr>
+                `;
+
+                let acuF = 0;
+                sortedCategories.forEach(cat => {
+                    let fi = counts[cat];
+                    acuF += fi;
+                    let hi = fi / nTotal;
+                    let pct = (hi * 100).toFixed(2);
+                    freqTableRowsCache.push(`<tr>
+                        <td class="px-4 py-2 border-b font-semibold text-esap">${esc(cat)}</td>
+                        <td class="px-4 py-2 border-b">${fi}</td>
+                        <td class="px-4 py-2 border-b">${acuF}</td>
+                        <td class="px-4 py-2 border-b">${hi.toFixed(4)}</td>
+                        <td class="px-4 py-2 border-b font-bold">${pct}%</td>
+                    </tr>`);
+                });
+
+                renderFreqTablePage();
+
+                // Tarjetas Cualitativas
+                cardsGrid.innerHTML = `
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] relative group cursor-pointer border-l-4 border-l-esap">
+                        <p class="text-xs text-gray-500">Moda (Categoría Predominante)</p>
+                        <p class="text-md font-bold text-esap mt-1">${esc(moda)}</p>
+                        <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                            <p class="font-bold text-amber-300">📌 Moda Estadística</p>
+                            <p class="mt-1">Categoría de <em>${varLabel}</em> con mayor frecuencia${modes.length > 1 ? '. Hay empate, por eso la variable es multimodal' : ''}.</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] relative group cursor-pointer border-l-4 border-l-amber-500">
+                        <p class="text-xs text-gray-500">Frecuencia de la Moda</p>
+                        <p class="text-md font-bold text-amber-600 mt-1">${maxFreq} proyectos (${modaPorcentaje}%)</p>
+                        <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                            <p class="font-bold text-amber-300">📊 Proporción de la Moda</p>
+                            <p class="mt-1">Equivale al ${modaPorcentaje}% de las ${nTotal} observaciones analizadas.</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-blue-500">
+                        <p class="text-xs text-gray-500">Categorías Distintas</p>
+                        <p class="text-xl font-bold text-blue-700 mt-1">${sortedCategories.length}</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-emerald-500">
+                        <p class="text-xs text-gray-500">Total Observaciones (n)</p>
+                        <p class="text-xl font-bold text-emerald-700 mt-1">${nTotal}</p>
+                    </div>
+                `;
+
+                // Ajustar UI de gráficos cualitativos
+                document.getElementById('chartTypeSelectorContainer').classList.add('hidden');
+                document.getElementById('boxplotCard').classList.add('hidden');
+                document.getElementById('chartsContainer').className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+                document.getElementById('chart1Title').innerText = "Distribución de Frecuencia (Diagrama de Barras)";
+                document.getElementById('chart2Title').innerText = "Proporción Porcentual (Gráfico de Pastel)";
+
+                renderQualitativeCharts(sortedCategories, sortedCategories.map(c => counts[c]));
+
+                document.getElementById('conclusionsText').innerHTML = `
+                    <p><strong>1. Predominancia (moda):</strong> ${modes.length === 1 ? `en ${selectedMunicipality}, la categoría más frecuente de <em>${varLabel}</em> es <strong>${esc(moda)}</strong>, con <strong>${maxFreq}</strong> proyectos (<strong>${modaPorcentaje}%</strong> del total).` : `la variable es multimodal: ${modes.length} categorías comparten la máxima frecuencia (${maxFreq} proyecto${maxFreq === 1 ? '' : 's'} cada una), por lo que no hay una categoría predominante.`}</p>
+                    <p><strong>2. Diversidad:</strong> se identifican <strong>${sortedCategories.length}</strong> categorías distintas en <strong>${nTotal}</strong> observaciones${sortedCategories.length === nTotal ? ' (cada registro es único: esta variable sirve poco para agrupar; considere analizar la modalidad de ejecución)' : ''}.</p>
+                `;
+
+            } else {
+                // ANALISIS CUANTITATIVO (Presupuesto / Avance)
+                document.getElementById('freqTypeBadge').innerText = "Datos Agrupados";
+                document.getElementById('freqTableTitle').innerText = "Tabla de Frecuencias por Intervalos de Clase";
+                document.getElementById('cardsSectionTitle').innerHTML = `<span class="bg-esap text-white w-7 h-7 rounded-full inline-flex items-center justify-center text-sm mr-2">3</span> Medidas de Tendencia Central, Dispersión y Cuartiles`;
+
+                document.getElementById('chartTypeSelectorContainer').classList.remove('hidden');
+                document.getElementById('boxplotCard').classList.remove('hidden');
+                document.getElementById('chartsContainer').className = 'grid grid-cols-1 md:grid-cols-3 gap-6';
+                document.getElementById('chart1Title').innerText = "Histograma de Frecuencias";
+                document.getElementById('chart2Title').innerText = "Distribución Secundaria";
+
+                const numValues = filteredData.map(row => Number(row[targetCol])).filter(v => !isNaN(v)).sort((a,b) => a - b);
+                const n = numValues.length;
+                const min = numValues[0];
+                const max = numValues[n - 1];
+                const range = max - min;
+                const k = range === 0 ? 1 : Math.max(1, Math.round(1 + 3.322 * Math.log10(n)));
+                const c = range / (k || 1);
+
+                let intervals = [];
+                let lower = min;
+                for (let i = 0; i < k; i++) {
+                    let upper = lower + c;
+                    intervals.push({ lower, upper, freq: 0, mark: (lower + upper) / 2 });
+                    lower = upper;
+                }
+
+                numValues.forEach(val => {
+                    for (let i = 0; i < intervals.length; i++) {
+                        let inRange = (i === intervals.length - 1) ? (val >= intervals[i].lower && val <= intervals[i].upper) : (val >= intervals[i].lower && val < intervals[i].upper);
+                        if (inRange) { intervals[i].freq++; break; }
+                    }
+                });
+
+                const sum = numValues.reduce((a, b) => a + b, 0);
+                const mean = sum / n;
+                const variance = numValues.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (n - 1 || 1);
+                const stdDev = Math.sqrt(variance);
+                const coefVar = mean > 0 ? (stdDev / mean) * 100 : 0;
+
+                const getPercentile = (p) => {
+                    let index = (p / 100) * (n - 1);
+                    let lowerIndex = Math.floor(index);
+                    let upperIndex = Math.ceil(index);
+                    if (lowerIndex === upperIndex) return numValues[lowerIndex];
+                    return numValues[lowerIndex] + (numValues[upperIndex] - numValues[lowerIndex]) * (index - lowerIndex);
+                };
+
+                const q1 = getPercentile(25);
+                const median = getPercentile(50);
+                const q3 = getPercentile(75);
+
+                const isCurrency = targetCol.includes('presupuesto');
+                const isPct = targetCol === 'porcentaje_avance';
+                const fmt = (v) => isCurrency ? formatCOP(v) : (v.toLocaleString('es-CO', {maximumFractionDigits: 2}) + (isPct ? '%' : ''));
+                lastStats = [['Variable', varLabel], ['Observaciones (n)', n], ['Mínimo', fmt(min)], ['Q1', fmt(q1)], ['Mediana', fmt(median)], ['Q3', fmt(q3)], ['Máximo', fmt(max)], ['Media', fmt(mean)], ['Desviación estándar', fmt(stdDev)], ['Coef. de variación', coefVar.toFixed(2) + '%']];
+                setInterp(buildInterp({ varLabel, n, min, max, mean, median, stdDev, q1, q3, fmt }, numValues));
+
+                cardsGrid.innerHTML = `
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-esap relative group cursor-pointer">
+                        <p class="text-xs text-gray-500">Media (Promedio)</p>
+                        <p class="text-md font-bold text-esap mt-1">${fmt(mean)}</p>
+                        <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                            <p class="font-bold text-amber-300">📐 Tendencia Central</p>
+                            <p class="mt-1">Promedio aritmético obtenido al sumar todos los valores y dividirlos entre el total de proyectos (${n}).</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-esap relative group cursor-pointer">
+                        <p class="text-xs text-gray-500">Mediana </p>
+                        <p class="text-md font-bold text-esap mt-1">${fmt(median)}</p>
+                        <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                            <p class="font-bold text-amber-300">🎯 Punto Medio</p>
+                            <p class="mt-1">Valor central: el <strong>50%</strong> de los datos está por debajo y el otro <strong>50%</strong> por encima de esta cifra.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-blue-600 relative group cursor-pointer">
+                        <p class="text-xs text-gray-500">Primer Cuartil</p>
+                        <p class="text-md font-bold text-blue-700 mt-1">${fmt(q1)}</p>
+                        <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                            <p class="font-bold text-blue-300">📊 Posición Cuartil</p>
+                            <p class="mt-1">Indica que el <strong>25%</strong> de los datos son menores o iguales a este valor.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-blue-600 relative group cursor-pointer">
+                        <p class="text-xs text-gray-500">Tercer Cuartil </p>
+                        <p class="text-md font-bold text-blue-700 mt-1">${fmt(q3)}</p>
+                        <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                            <p class="font-bold text-blue-300">📊 Posición Cuartil</p>
+                            <p class="mt-1">Indica que el <strong>75%</strong> de los datos son menores o iguales a este valor (y un 25% superior).</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-amber-500 relative group cursor-pointer">
+                        <p class="text-xs text-gray-500">Desviación Estándar</p>
+                        <p class="text-md font-bold text-amber-600 mt-1">${fmt(stdDev)}</p>
+                        <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                            <p class="font-bold text-amber-300">📏 Medida de Dispersión</p>
+                            <p class="mt-1">Mide qué tan alejados o dispersos están los datos con respecto al valor promedio (Media).</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-amber-500 relative group cursor-pointer">
+                        <p class="text-xs text-gray-500">Coef. de Variación (CV)</p>
+                        <p class="text-md font-bold text-amber-600 mt-1">${coefVar.toFixed(2)}%</p>
+                        <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                            <p class="font-bold text-amber-300">📈 Variabilidad Relativa</p>
+                            <p class="mt-1">Representa el porcentaje de variabilidad respecto a la media. A mayor %, más heterogéneos son los datos.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-emerald-600 relative group cursor-pointer">
+                        <p class="text-xs text-gray-500">Mínimo / Máximo</p>
+                        <p class="text-xs font-bold text-emerald-700 mt-1">${fmt(min)}<br>${fmt(max)}</p>
+                        <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                            <p class="font-bold text-emerald-300">↔️ Rango Extremo</p>
+                            <p class="mt-1">Muestra los valores límite observado más bajo y más alto en el grupo analizado.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-emerald-600">
+                        <p class="text-xs text-gray-500">Total Elementos</p>
+                        <p class="text-lg font-bold text-emerald-700 mt-1">${n}</p>
+                    </div>
+                `;
+
+                document.getElementById('freqTableHead').innerHTML = `
+                    <tr>
+                        <th class="px-4 py-2">Intervalo de Clase</th>
+                        <th class="px-4 py-2">Marca de Clase (x<sub>i</sub>)</th>
+                        <th class="px-4 py-2">Frecuencia Absoluta (f<sub>i</sub>)</th>
+                        <th class="px-4 py-2">Frec. Acumulada (F<sub>i</sub>)</th>
+                        <th class="px-4 py-2">Frecuencia Relativa (h<sub>i</sub>)</th>
+                        <th class="px-4 py-2">Porcentaje (%)</th>
+                    </tr>
+                `;
+
+                let acuF = 0;
+                intervals.forEach((inv, idx) => {
+                    acuF += inv.freq;
+                    let rel = inv.freq / n;
+                    freqTableRowsCache.push(`<tr>
+                        <td class="px-4 py-2 border-b font-medium">[${fmt(inv.lower)} - ${fmt(inv.upper)}${idx === intervals.length - 1 ? ']' : ')'}</td>
+                        <td class="px-4 py-2 border-b">${fmt(inv.mark)}</td>
+                        <td class="px-4 py-2 border-b">${inv.freq}</td>
+                        <td class="px-4 py-2 border-b">${acuF}</td>
+                        <td class="px-4 py-2 border-b">${rel.toFixed(4)}</td>
+                        <td class="px-4 py-2 border-b font-bold">${(rel * 100).toFixed(2)}%</td>
+                    </tr>`);
+                });
+                renderFreqTablePage();
+                renderQuantitativeCharts(intervals, numValues, targetCol, { fmt, isCurrency, isPct, c });
+
+                const iqr = q3 - q1;
+                const outliers = numValues.filter(v => v < q1 - 1.5 * iqr || v > q3 + 1.5 * iqr).length;
+                const cvTxt = coefVar < 15 ? 'baja (datos homogéneos)' : coefVar < 30 ? 'moderada' : 'alta (datos muy heterogéneos)';
+                const sesgo = Math.abs(mean - median) <= 0.05 * Math.abs(median || 1) ? 'aproximadamente simétrica' : (mean > median ? 'sesgada a la derecha (pocos valores altos elevan el promedio)' : 'sesgada a la izquierda (pocos valores bajos reducen el promedio)');
+                document.getElementById('conclusionsText').innerHTML = `
+                    <p><strong>1. Tendencia central:</strong> en ${selectedMunicipality}, <em>${varLabel.toLowerCase()}</em> tiene media de <strong>${fmt(mean)}</strong> y mediana de <strong>${fmt(median)}</strong>; la distribución es ${sesgo}. El 50% central de los proyectos se ubica entre <strong>${fmt(q1)}</strong> (Q<sub>1</sub>) y <strong>${fmt(q3)}</strong> (Q<sub>3</sub>).</p>
+                    <p><strong>2. Dispersión:</strong> desviación estándar de <strong>${fmt(stdDev)}</strong> y coeficiente de variación de <strong>${coefVar.toFixed(2)}%</strong>: variabilidad ${cvTxt}.</p>
+                    <p><strong>3. Valores atípicos:</strong> ${outliers > 0 ? `se detectan <strong>${outliers}</strong> dato(s) fuera de los límites de 1,5×RIC (puntos rojos del boxplot); conviene revisarlos.` : 'no se detectan valores atípicos con el criterio de 1,5×RIC.'}</p>
+                `;
+            }
+        }
+
+        // ================= GRÁFICOS =================
+        Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', sans-serif";
+        Chart.defaults.font.size = 11;
+        const PALETTE = ['#002D62', '#D4AF37', '#335C8D', '#10B981', '#6366F1', '#EC4899', '#F97316', '#0EA5E9', '#8B5CF6', '#94A3B8'];
+        const colorAt = (i) => PALETTE[i % PALETTE.length];
+        const shortLabel = (t, n = 22) => t.length > n ? t.slice(0, n - 1) + '…' : t;
+        const yFreq = { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Frecuencia absoluta' } };
+        const xAxis = (t) => ({ ticks: { maxRotation: 60, font: { size: 9 } }, title: { display: true, text: t } });
+        function destroyCharts() {
+            [histChartInstance, secChartInstance, boxChartInstance].forEach(c => c && c.destroy());
+            histChartInstance = secChartInstance = boxChartInstance = null;
+        }
+
+        // Plugin propio: muestra el valor sobre las barras y el % dentro de las porciones
+        Chart.register({
+            id: 'valueLabels',
+            afterDatasetsDraw(chart, args, opts) {
+                if (!opts || !opts.show) return;
+                const { ctx } = chart, ds = chart.data.datasets[0], meta = chart.getDatasetMeta(0);
+                const total = ds.data.reduce((a, b) => a + b, 0);
+                ctx.save(); ctx.font = '600 10px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.textBaseline = 'middle';
+                meta.data.forEach((el, i) => {
+                    const v = ds.data[i]; if (!v) return;
+                    if (meta.type === 'bar') {
+                        const horiz = chart.options.indexAxis === 'y';
+                        ctx.fillStyle = '#374151'; ctx.textAlign = horiz ? 'left' : 'center';
+                        ctx.fillText(v, horiz ? el.x + 4 : el.x, horiz ? el.y : el.y - 8);
+                    } else if (v / total >= 0.06) {
+                        const p = el.tooltipPosition(); ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+                        ctx.fillText(((v / total) * 100).toFixed(1) + '%', p.x, p.y);
+                    }
+                });
+                ctx.restore();
+            }
+        });
+
+        // GRÁFICOS CUALITATIVOS: máx. 8 categorías + "Otras" para que sigan siendo legibles
+        function renderQualitativeCharts(labels, data) {
+            destroyCharts();
+            const MAX = 8, total = data.reduce((a, b) => a + b, 0);
+            const L = labels.slice(0, MAX), D = data.slice(0, MAX);
+            if (labels.length > MAX) { L.push(`Otras (${labels.length - MAX} categorías)`); D.push(data.slice(MAX).reduce((a, b) => a + b, 0)); }
+            const colors = L.map((_, i) => colorAt(i));
+            const tip = { callbacks: {
+                title: (it) => L[it[0].dataIndex],
+                label: (ctx) => ` ${ctx.raw} proyecto${ctx.raw === 1 ? '' : 's'} (${((ctx.raw / total) * 100).toFixed(1)}%)`
+            } };
+            histChartInstance = new Chart(document.getElementById('histogramChart'), {
+                type: 'bar',
+                data: { labels: L.map(l => shortLabel(l)), datasets: [{ label: 'Proyectos', data: D, backgroundColor: colors, borderRadius: 4 }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, layout: { padding: { right: 24 } },
+                    plugins: { legend: { display: false }, tooltip: tip, valueLabels: { show: true } },
+                    scales: { x: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Frecuencia absoluta' } } } }
+            });
+            secChartInstance = new Chart(document.getElementById('secondaryChart'), {
+                type: 'pie',
+                data: { labels: L.map(l => shortLabel(l)), datasets: [{ data: D, backgroundColor: colors, borderColor: '#fff', borderWidth: 2 }] },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }, tooltip: tip, valueLabels: { show: true } } }
+            });
+        }
+
+        // GRÁFICOS CUANTITATIVOS
+        function renderQuantitativeCharts(intervals, numValues, targetCol, o) {
+            destroyCharts();
+            const { fmt, isCurrency, isPct, c } = o, n = numValues.length;
+            const axisFmt = (v) => isCurrency ? '$' + (v / 1e6).toLocaleString('es-CO', { maximumFractionDigits: 1 }) + ' M'
+                : v.toLocaleString('es-CO', { maximumFractionDigits: 1 }) + (isPct ? '%' : '');
+            const freqs = intervals.map(i => i.freq);
+            const fullLabels = intervals.map((i, k) => `[${fmt(i.lower)} - ${fmt(i.upper)}${k === intervals.length - 1 ? ']' : ')'}`);
+            const shortLabels = intervals.map(i => `${axisFmt(i.lower)} – ${axisFmt(i.upper)}`);
+            const fTip = (ctx) => ` ${ctx.raw} proyecto${ctx.raw === 1 ? '' : 's'} (${((ctx.raw / n) * 100).toFixed(1)}%)`;
+            const secType = document.getElementById('chartTypeSelector').value;
+            const varLabel = VAR_LABELS[targetCol] || targetCol;
+            document.getElementById('chart1Title').innerText = `Histograma de Frecuencias — ${varLabel}`;
+            document.getElementById('chart2Title').innerText = { line: 'Polígono de Frecuencias', bar: 'Gráfico de Barras de Frecuencias', pie: 'Distribución Porcentual (Pastel)', doughnut: 'Distribución Porcentual (Donut)' }[secType];
+
+            histChartInstance = new Chart(document.getElementById('histogramChart'), {
+                type: 'bar',
+                data: { labels: shortLabels, datasets: [{ label: 'Frecuencia', data: freqs, backgroundColor: '#002D62', borderRadius: 2, categoryPercentage: 1, barPercentage: 0.98 }] },
+                options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 16 } },
+                    plugins: { legend: { display: false }, valueLabels: { show: true }, tooltip: { callbacks: { title: (it) => fullLabels[it[0].dataIndex], label: fTip } } },
+                    scales: { y: yFreq, x: xAxis('Intervalos de clase') } }
+            });
+
+            let cfg;
+            if (secType === 'line') {
+                const marks = intervals.map(i => i.mark), step = c || 1;
+                cfg = { type: 'line',
+                    data: { labels: [marks[0] - step, ...marks, marks[marks.length - 1] + step].map(axisFmt),
+                        datasets: [{ label: 'Frecuencia', data: [0, ...freqs, 0], borderColor: '#D4AF37', backgroundColor: 'rgba(212,175,55,0.2)', fill: true, tension: 0, pointRadius: 3, pointBackgroundColor: '#002D62' }] },
+                    options: { responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { title: (it) => 'Marca de clase: ' + it[0].label, label: fTip } } },
+                        scales: { y: yFreq, x: xAxis('Marca de clase') } } };
+            } else if (secType === 'bar') {
+                cfg = { type: 'bar',
+                    data: { labels: shortLabels, datasets: [{ label: 'Frecuencia', data: freqs, backgroundColor: '#D4AF37', borderRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 16 } },
+                        plugins: { legend: { display: false }, valueLabels: { show: true }, tooltip: { callbacks: { title: (it) => fullLabels[it[0].dataIndex], label: fTip } } },
+                        scales: { y: yFreq, x: xAxis('Intervalos de clase') } } };
+            } else {
+                cfg = { type: secType,
+                    data: { labels: shortLabels, datasets: [{ data: freqs, backgroundColor: freqs.map((_, i) => colorAt(i)), borderColor: '#fff', borderWidth: 2 }] },
+                    options: { responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } }, valueLabels: { show: true },
+                            tooltip: { callbacks: { title: (it) => fullLabels[it[0].dataIndex], label: fTip } } } } };
+            }
+            secChartInstance = new Chart(document.getElementById('secondaryChart'), cfg);
+
+            // Boxplot (si el plugin no cargó, el resto de la página sigue funcionando)
+            try {
+                const meanV = numValues.reduce((a, b) => a + b, 0) / n;
+                boxChartInstance = new Chart(document.getElementById('boxplotChart'), {
+                    type: 'boxplot',
+                    data: { labels: [varLabel], datasets: [{ label: 'Distribución', backgroundColor: 'rgba(0,45,98,0.35)', borderColor: '#002D62', borderWidth: 2,
+                        outlierBackgroundColor: '#ef4444', outlierRadius: 4, itemRadius: 0, meanBackgroundColor: '#D4AF37', meanBorderColor: '#002D62', meanRadius: 5, data: [numValues] }] },
+                    options: { responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { displayColors: false, padding: 10, bodyFont: { size: 12 }, callbacks: {
+                            title: () => varLabel,
+                            label: (ctx) => {
+                                const st = ctx.parsed; if (!st) return '';
+                                const ok = (v) => Number.isFinite(v) ? fmt(v) : 'N/D';
+                                const out = Array.isArray(st.outliers) ? st.outliers : [];
+                                const hi = ctx.formattedValue && ctx.formattedValue.hoveredOutlierIndex;
+                                const lines = [];
+                                if (hi >= 0 && out[hi] !== undefined) lines.push(` Atípico: ${ok(out[hi])}`);
+                                lines.push(` Mín: ${ok(st.min)}`, ` Q1: ${ok(st.q1)}`, ` Mediana: ${ok(st.median)}`, ` Q3: ${ok(st.q3)}`, ` Máx: ${ok(st.max)}`, ` Media: ${ok(meanV)}`, ` Atípicos: ${out.length}`);
+                                return lines;
+                            } } } },
+                        scales: { y: { ticks: { callback: (v) => axisFmt(v) } } } }
+                });
+            } catch (err) {
+                console.error('Boxplot no disponible:', err);
+                document.getElementById('chart3Title').innerText = 'Boxplot no disponible (no cargó el plugin)';
+            }
+        }
+
+        // ===== MEJORAS: interpretación, validación, persistencia, PNG y comparación =====
+        let lastInterp = [];
+        function buildInterp(x, vals) {
+            const iqr = x.q3 - x.q1, lo = x.q1 - 1.5 * iqr, hi = x.q3 + 1.5 * iqr;
+            const out = vals.filter(v => v < lo || v > hi).length;
+            const sk = x.stdDev > 0 ? (x.mean - x.median) / x.stdDev : 0;
+            const asim = Math.abs(sk) < 0.1 ? 'es aproximadamente simétrica (media y mediana son similares)' : sk > 0 ? 'es asimétrica a la derecha: la media supera a la mediana por efecto de valores altos' : 'es asimétrica a la izquierda: la media es menor que la mediana por efecto de valores bajos';
+            const cv = x.mean !== 0 ? Math.abs(x.stdDev / x.mean) * 100 : 0;
+            const disp = cv < 15 ? 'baja (datos homogéneos)' : cv < 30 ? 'moderada' : 'alta (datos muy dispersos)';
+            return [`Para <b>${esc(x.varLabel)}</b> se analizaron <b>${x.n}</b> registros, con valores entre ${x.fmt(x.min)} y ${x.fmt(x.max)}.`,
+                `La mitad de los datos está por debajo de ${x.fmt(x.median)} (mediana) y el 50% central se ubica entre ${x.fmt(x.q1)} y ${x.fmt(x.q3)}. La media es ${x.fmt(x.mean)}.`,
+                `La distribución ${asim}.`,
+                `La dispersión es ${disp} (coeficiente de variación ${cv.toFixed(1)}%).`,
+                out ? `Se detectaron <b>${out}</b> valor(es) atípico(s) según la regla 1,5×RIC; conviene revisarlos.` : 'No se detectaron valores atípicos según la regla 1,5×RIC.'];
+        }
+        function setInterp(lines) {
+            const b = document.getElementById('interpBox');
+            lastInterp = lines ? lines.map(l => l.replace(/<[^>]+>/g, '')) : [];
+            if (!lines) { b.classList.add('hidden'); b.innerHTML = ''; return; }
+            b.innerHTML = '<h4 class="font-semibold text-esap mb-2">Interpretación automática</h4>' + lines.map(l => `<p>${l}</p>`).join('');
+            b.classList.remove('hidden');
+        }
+
+        function validateCsv(nameCol, asigCol, ejecCol) {
+            const rows = rawCsvParsedRows, issues = [];
+            const empty = (v) => v === null || v === undefined || String(v).trim() === '';
+            const badNum = (c) => rows.filter(r => empty(r[c]) || !/\d/.test(String(r[c]))).length;
+            const noName = rows.filter(r => empty(r[nameCol])).length, bA = badNum(asigCol), bE = badNum(ejecCol);
+            const over = rows.filter(r => parseNum(r[asigCol]) > 0 && parseNum(r[ejecCol]) > parseNum(r[asigCol])).length;
+            const neg = rows.filter(r => parseNum(r[asigCol]) < 0 || parseNum(r[ejecCol]) < 0).length;
+            const names = rows.map(r => String(r[nameCol] ?? '').trim()).filter(Boolean);
+            const dups = names.length - new Set(names).size;
+            if (noName) issues.push(`${noName} fila(s) sin nombre de proyecto`);
+            if (bA) issues.push(`${bA} valor(es) vacíos o no numéricos en "${esc(asigCol)}" (se tomaron como 0)`);
+            if (bE) issues.push(`${bE} valor(es) vacíos o no numéricos en "${esc(ejecCol)}" (se tomaron como 0)`);
+            if (neg) issues.push(`${neg} fila(s) con valores negativos`);
+            if (over) issues.push(`${over} proyecto(s) con ejecutado mayor al asignado (avance superior a 100%)`);
+            if (dups) issues.push(`${dups} nombre(s) de proyecto repetido(s)`);
+            let box = document.getElementById('validationBox');
+            if (!box) { box = document.createElement('div'); box.id = 'validationBox'; document.querySelector('#previewSection h3').after(box); }
+            box.className = 'rounded-[6px] p-3 text-xs border ' + (issues.length ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-emerald-50 border-emerald-300 text-emerald-900');
+            box.innerHTML = issues.length ? '<b>Revisión del archivo:</b><ul class="list-disc ml-5 mt-1">' + issues.map(i => `<li>${i}</li>`).join('') + '</ul>' : '<b>Revisión del archivo:</b> no se encontraron problemas en los datos.';
+        }
+
+        const LS_KEY = 'esap_stats_v1';
+        function saveState() { try { localStorage.setItem(LS_KEY, JSON.stringify({ rawData, municipality: selectedMunicipality })); } catch (e) {} }
+        function restoreState() {
+            try {
+                const st = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+                if (!st || !Array.isArray(st.rawData) || !st.rawData.length) return;
+                rawData = st.rawData; filteredData = [...rawData];
+                const sel = document.getElementById('municipalitySelect');
+                if (st.municipality && [...sel.options].some(o => o.value === st.municipality)) { sel.value = st.municipality; selectedMunicipality = st.municipality; }
+                displayPreview(rawData);
+                notify(`Se restauraron ${rawData.length} registros guardados.`);
+            } catch (e) {}
+        }
+        (function () {
+            const clr = document.createElement('button');
+            clr.textContent = 'Borrar datos guardados'; clr.className = 'no-print text-xs text-red-600 underline';
+            clr.onclick = () => { try { localStorage.removeItem(LS_KEY); } catch (e) {} notify('Datos guardados eliminados.'); };
+            document.querySelector('#previewSection h3').after(clr);
+        })();
+
+        function downloadCanvasPNG(cv, name) {
+            if (!cv || !cv.width) { notify('No hay gráfica para descargar.'); return; }
+            const t = document.createElement('canvas'); t.width = cv.width; t.height = cv.height;
+            const x = t.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, t.width, t.height); x.drawImage(cv, 0, 0);
+            const a = document.createElement('a'); a.href = t.toDataURL('image/png'); a.download = `${name}_${selectedMunicipality}.png`; a.click();
+        }
+        [['histogramChart', 'histograma'], ['secondaryChart', 'grafico_secundario'], ['boxplotChart', 'boxplot']].forEach(([id, name]) => {
+            const cv = document.getElementById(id), host = cv.parentElement, b = document.createElement('button');
+            b.textContent = '⬇ Descargar PNG'; b.className = 'no-print block mx-auto mb-2 text-[11px] text-esap border border-[#dfe3e8] rounded-[6px] px-2 py-0.5 hover:bg-gray-50';
+            b.onclick = () => downloadCanvasPNG(cv, name); host.parentElement.insertBefore(b, host);
+        });
+
+        // Comparación entre municipios
+        let cmpRows = null, cmpChart = null;
+        function statsOf(a) {
+            const v = [...a].sort((x, y) => x - y), n = v.length;
+            const pc = (p) => { const i = (n - 1) * p / 100, f = Math.floor(i); return v[f] + (v[Math.min(f + 1, n - 1)] - v[f]) * (i - f); };
+            const mean = v.reduce((q, x) => q + x, 0) / n;
+            const sd = n > 1 ? Math.sqrt(v.reduce((q, x) => q + (x - mean) ** 2, 0) / (n - 1)) : 0;
+            return { n, min: v[0], q1: pc(25), median: pc(50), q3: pc(75), max: v[n - 1], mean, sd, cv: mean ? sd / Math.abs(mean) * 100 : 0 };
+        }
+        function renderCompare() {
+            const box = document.getElementById('cmpResult');
+            if (!cmpRows) return;
+            const col = document.getElementById('targetColumnTab2').value.trim();
+            if (!['presupuesto_asignado', 'presupuesto_ejecutado', 'porcentaje_avance'].includes(col)) { box.innerHTML = '<p class="text-sm text-amber-700">Selecciona arriba una variable numérica (asignado, ejecutado o % de avance) para comparar.</p>'; return; }
+            const A = statsOf(filteredData.map(r => Number(r[col]) || 0)), B = statsOf(cmpRows.map(r => r[col]));
+            const nameA = selectedMunicipality, nameB = document.getElementById('cmpName').value.trim() || 'Otro municipio';
+            const f = (v) => col === 'porcentaje_avance' ? v.toFixed(1) + '%' : formatCOP(v);
+            const items = [['Registros', 'n'], ['Mínimo', 'min'], ['Q1', 'q1'], ['Mediana', 'median'], ['Media', 'mean'], ['Q3', 'q3'], ['Máximo', 'max'], ['Desv. estándar', 'sd'], ['Coef. de variación', 'cv']];
+            const cell = (k, v) => k === 'n' ? v : k === 'cv' ? v.toFixed(1) + '%' : f(v);
+            const diff = (k) => k === 'n' || !A[k] ? '—' : ((B[k] - A[k]) / Math.abs(A[k]) * 100).toFixed(1) + '%';
+            box.innerHTML = `<p class="text-xs text-gray-500 mb-2">Variable: <b>${esc(col)}</b></p>
+                <table class="min-w-full text-xs text-left border"><thead class="bg-[#002D62] text-white"><tr><th class="px-3 py-2">Medida</th><th class="px-3 py-2">${esc(nameA)}</th><th class="px-3 py-2">${esc(nameB)}</th><th class="px-3 py-2">Diferencia (B vs A)</th></tr></thead><tbody>` +
+                items.map(([l, k]) => `<tr class="border-t"><td class="px-3 py-1.5 font-medium">${l}</td><td class="px-3 py-1.5">${cell(k, A[k])}</td><td class="px-3 py-1.5">${cell(k, B[k])}</td><td class="px-3 py-1.5">${diff(k)}</td></tr>`).join('') +
+                `</tbody></table><div class="relative h-64 mt-4"><canvas id="cmpCanvas"></canvas></div>`;
+            if (cmpChart) cmpChart.destroy();
+            const ks = ['min', 'q1', 'median', 'mean', 'q3', 'max'], labs = ['Mín', 'Q1', 'Mediana', 'Media', 'Q3', 'Máx'];
+            cmpChart = new Chart(document.getElementById('cmpCanvas'), {
+                type: 'bar',
+                data: { labels: labs, datasets: [{ label: nameA, data: ks.map(k => A[k]), backgroundColor: '#002D62' }, { label: nameB, data: ks.map(k => B[k]), backgroundColor: '#D4AF37' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${f(c.parsed.y)}` } } },
+                    scales: { y: { ticks: { callback: (v) => col === 'porcentaje_avance' ? v + '%' : '$' + (v / 1e6).toLocaleString('es-CO') + ' M' } } } }
+            });
+        }
+        document.getElementById('cmpFile').addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            Papa.parse(file, { header: true, dynamicTyping: true, skipEmptyLines: true, complete: (res) => {
+                const h = res.meta.fields || [];
+                const find = (inc, exc = []) => h.find(c => { const l = String(c).toLowerCase(); return inc.some(k => l.includes(k)) && !exc.some(k => l.includes(k)); });
+                const cA = find(['asignad', 'presupuesto', 'valor'], ['ejecut', 'pagad']), cE = find(['ejecutad', 'ejecut', 'pagad'], ['modalid', 'ejecuc']);
+                if (!res.data.length || !cA || !cE) { notify('No se encontraron las columnas de presupuesto asignado y ejecutado en ese CSV.'); return; }
+                cmpRows = res.data.map(r => { const a = parseNum(r[cA]), x = parseNum(r[cE]); return { presupuesto_asignado: a, presupuesto_ejecutado: x, porcentaje_avance: a > 0 ? Number(((x / a) * 100).toFixed(1)) : 0 }; });
+                renderCompare(); notify(`Comparación lista: ${cmpRows.length} registros del otro municipio.`);
+            } });
+        });
+        document.getElementById('cmpName').addEventListener('input', renderCompare);
+        document.getElementById('targetColumnTab2').addEventListener('change', renderCompare);
+
+        restoreState();
+    </script>
+</body>
+</html>
