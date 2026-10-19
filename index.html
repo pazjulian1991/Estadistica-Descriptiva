@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estadística Descriptiva Avanzada / ESAP</title>
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <!-- Chart.js Boxplot Plugin CDN -->
@@ -46,17 +46,38 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', sans-serif; background-color: var(--surface-canvas, #f2f5f7); color: #303336; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', sans-serif; background-color: #f2f5f7; color: #303336; }
         @media print {
             .no-print { display: none !important; }
             body { background: white !important; }
             section, #chartsContainer > div { break-inside: avoid; }
         }
+        .card-surface{border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,.1),0 0 2px rgba(0,0,0,.1)}
+        @media screen{html.dark footer{color:#9aa8ba}}
         .interactive-tooltip { display: none !important; }
         #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 16px); background: #002D62; color: #fff; border-left: 4px solid #D4AF37; padding: 10px 16px; border-radius: 8px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 10000; max-width: 90vw; }
         #toast.show { opacity: 1; transform: translate(-50%, 0); }
         #floatTip { position: fixed; left: 0; top: 0; z-index: 9999; max-width: 260px; pointer-events: none; opacity: 0; transition: opacity .15s; text-align: left; }
         #floatTip.show { opacity: 1; }
+        .ai-user{background:#002D62;color:#fff}.ai-bot{background:#fff;border:1px solid #dfe3e8;color:#374151}
+        @media screen{html.dark .ai-bot{background:#162231 !important;border-color:#2c3a4d;color:#dbe3ee}}
+        .row-err{background:#fee2e2}.row-warn{background:#fef3c7}.row-dup{background:#e0f2fe}.row-off{opacity:.35}
+        @media screen {
+            html.dark body{background:#0e1621 !important;color:#e5e7eb !important}
+            html.dark .bg-white{background-color:#162231 !important}
+            html.dark .bg-gray-50,html.dark .bg-gray-100,html.dark .bg-gray-200{background-color:#22344a !important}
+            html.dark .bg-blue-50,html.dark .bg-blue-100{background-color:#14263d !important}
+            html.dark .bg-amber-50,html.dark .bg-amber-100{background-color:#3a2d12 !important}
+            html.dark .bg-emerald-50{background-color:#12332a !important}
+            html.dark .text-esap{color:#8fb4e8 !important}
+            html.dark .text-gray-600,html.dark .text-gray-600{color:#9aa8ba !important}
+            html.dark .text-gray-700,html.dark .text-gray-800,html.dark .text-gray-900{color:#dbe3ee !important}
+            html.dark [class*="border-[#dfe3e8]"],html.dark .border-gray-200,html.dark .border-blue-200,html.dark .divide-gray-200>*+*{border-color:#2c3a4d !important}
+            html.dark select,html.dark textarea,html.dark input:not([type=checkbox]){background-color:#1b2a3b !important;color:#e5e7eb !important;border-color:#2c3a4d !important}
+            html.dark #chartsContainer>div,html.dark #cmpResult .relative{background:#fff !important;border-radius:12px}
+            html.dark #chartsContainer h4{color:#374151 !important}html.dark #chartsContainer p{color:#6b7280 !important}
+            html.dark .row-err{background:#4a1d1d}html.dark .row-warn{background:#4a3a14}html.dark .row-dup{background:#16384f}
+        }
     </style>
 </head>
 <body class="bg-[#f2f5f7] text-[#303336] min-h-screen flex flex-col">
@@ -75,17 +96,19 @@
             </div>
             <div class="mt-4 md:mt-0 text-right flex items-center gap-3">
                 <span class="inline-block bg-esap-light text-xs px-3 py-1 rounded-full font-medium">Versión 2.0</span>
+                <button id="darkToggle" class="bg-esap-light text-white font-bold px-3 py-1 rounded-[6px] text-xs shadow">🌙 Modo oscuro</button>
                 <button onclick="window.print()" class="bg-esap-accent text-esap-dark font-bold px-3 py-1 rounded-[6px] text-xs hover:bg-amber-400 transition shadow">🖨️ Imprimir Reporte</button>
             </div>
         </div>
     </header>
+    <div id="simBanner" role="alert" class="hidden bg-amber-100 text-amber-900 text-xs font-semibold text-center py-2 px-4 border-b border-amber-300">⚠️ DATOS SIMULADOS: generados al azar para practicar. No corresponden a información real del municipio.</div>
 
     <!-- Contenido Principal -->
     <main class="flex-grow max-w-[960px] w-full mx-auto px-4 py-[80px] space-y-[80px]">
 
         <!-- PESTAÑA 1: ENTRADA DE INFORMACIÓN -->
         <div id="tab1" class="space-y-6">
-            <div class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="bg-white card-surface p-[24px] border border-[#dfe3e8] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-esap mb-2">Panel de Carga</h2>
                     <p class="text-gray-600 text-sm">
@@ -99,13 +122,13 @@
                         <option value="Santander de Quilichao">Santander de Quilichao</option>
                         <option value="Puerto Tejada">Puerto Tejada</option>
                         <option value="Patía (El Bordo)">Patía (El Bordo)</option>
-                        <option value="Piendamó">Piendamó</option>
-                    </select>
+                        <option value="Piendamó">Piendamó</option><option value="__otro">Otro (escribir nombre)…</option>
+                    </select><input id="municipalityCustom" type="text" placeholder="Nombre del municipio" class="hidden w-full mt-2 rounded-[6px] border border-[#dfe3e8] p-2.5 text-sm bg-white">
                 </div>
             </div>
 
             <!-- SECCIÓN 1: Configuración y Datos -->
-            <section class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] space-y-6">
+            <section class="bg-white card-surface p-[24px] border border-[#dfe3e8] space-y-6">
                 <div class="border-b pb-4 flex justify-between items-center">
                     <h3 class="text-lg font-semibold text-esap flex items-center">
                         <span class="bg-esap text-white w-7 h-7 rounded-full inline-flex items-center justify-center text-sm mr-2">1</span>
@@ -117,7 +140,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Contexto del Trabajo</label>
-                        <textarea id="contextInput" rows="3" class="w-full rounded-[6px] border-[#dfe3e8] border p-3 text-sm focus:ring-esap focus:border-esap bg-gray-50" readonly>Trabajo de Inteligencia Artificial y Big Data - Análisis de Proyectos.</textarea>
+                        <textarea id="contextInput" rows="3" class="w-full rounded-[6px] border-[#dfe3e8] border p-3 text-sm focus:ring-esap focus:border-esap bg-gray-50">Estadística Descriptiva - Proyectos en el municipio de Popayán.</textarea>
                     </div>
 
                     <div>
@@ -126,7 +149,7 @@
                             <option value="modalidad_ejecucion" selected>modalidad_ejecucion (Cualitativa)</option>
                             <option value="presupuesto_ejecutado">presupuesto_ejecutado (Cuantitativa)</option>
                             <option value="presupuesto_asignado">presupuesto_asignado (Cuantitativa)</option>
-                            <option value="porcentaje_avance">porcentaje_avance (Cuantitativa)</option>
+                            <option value="porcentaje_avance">% de ejecución (Cuantitativa)</option>
                             <option value="nombre_proyecto">nombre_proyecto (Cualitativa)</option>
                         </select>
                     </div>
@@ -135,68 +158,134 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Filtro Rápido de Proyectos</label>
                         <select id="filterCriteria" class="w-full rounded-[6px] border-[#dfe3e8] border p-3 text-sm focus:ring-esap focus:border-esap bg-gray-50 font-medium text-esap shadow-sm">
                             <option value="all" selected>Todos los proyectos</option>
-                            <option value="critical">Proyectos Críticos (Avance &lt; 50%)</option>
-                            <option value="good">Proyectos en Buen Estado (Avance ≥ 50%)</option>
+                            <option value="critical">Proyectos Críticos (Ejecución &lt; 50%)</option>
+                            <option value="good">Proyectos en Buen Estado (Ejecución ≥ 50%)</option>
                         </select>
-                        <p class="text-[11px] text-gray-500 mt-1">Filtra los datos cargados antes de correr los cálculos estadísticos.</p>
+                        <p class="text-xs text-gray-600 mt-1">Filtra los datos cargados antes de correr los cálculos estadísticos. Ejecución = ejecutado ÷ asignado (avance financiero, no físico).</p>
                     </div>
                 </div>
 
                 <div class="border-t pt-4 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="w-full md:w-auto flex-grow">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Cargar Archivo CSV (Cualquier Estructura)</label>
-                        <input type="file" id="csvFile" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-[6px] file:border-0 file:text-sm file:font-semibold file:bg-esap file:text-white hover:file:bg-esap-dark cursor-pointer">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cargar archivo Excel (.xlsx) o CSV</label>
+                        <div id="dropZone" class="border-2 border-dashed border-[#dfe3e8] rounded-[12px] p-3 transition">
+                            <input type="file" id="csvFile" accept=".xlsx,.xlsm,.csv,.txt" multiple class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-[6px] file:border-0 file:text-sm file:font-semibold file:bg-esap file:text-white hover:file:bg-esap-dark cursor-pointer">
+                            <p class="text-xs text-gray-600 mt-1">También puedes arrastrar el archivo aquí. Al cargarlo verás los datos de inmediato y podrás elegir hoja, columnas y filas.</p>
+                            <p class="text-xs text-gray-600">Puedes seleccionar varios archivos a la vez para compararlos.</p>
+                            <div id="loadProgress" class="hidden mt-2" aria-live="polite"><p id="loadProgressText" class="text-xs text-esap font-medium mb-1"></p><div class="h-2 bg-gray-200 rounded-full overflow-hidden"><div id="loadProgressBar" class="h-2 bg-esap rounded-full transition-all" style="width:2%"></div></div></div>
+                        </div>
                     </div>
                     <div class="flex flex-wrap gap-3 w-full md:w-auto">
                         <button id="manualDataBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2.5 rounded-[6px] text-sm transition">
                             Digitar Manualmente
                         </button>
-                        <button id="autoDataBtn" class="bg-amber-600 hover:bg-amber-700 text-white font-medium px-4 py-2.5 rounded-[6px] text-sm transition shadow">
-                            ⚡ Datos Automáticos (Mín. 30)
-                        </button>
+                        <label for="autoCount" class="flex items-center gap-1 text-xs text-gray-700">Cantidad <input id="autoCount" type="number" min="30" max="2000" value="30" class="w-20 rounded-[6px] border border-[#dfe3e8] p-2 text-xs bg-white"></label><button id="autoDataBtn" class="bg-amber-600 hover:bg-amber-700 text-white font-medium px-4 py-2.5 rounded-[6px] text-sm transition shadow">⚡ Generar datos simulados</button>
                         <button id="processBtn" class="bg-esap hover:bg-esap-dark text-white font-medium px-6 py-2.5 rounded-[6px] text-sm transition shadow">
                             Ver Análisis Estadístico &rarr;
                         </button>
+                        <button id="resetAllBtn" type="button" class="bg-white hover:bg-gray-50 text-red-600 border border-[#dfe3e8] font-medium px-4 py-2.5 rounded-[6px] text-sm transition">🗑️ Empezar de nuevo</button>
                     </div>
                 </div>
             </section>
 
-            <!-- SECCIÓN 1.5: Panel de Mapeo Inteligente de Columnas -->
-            <section id="columnMappingSection" class="bg-blue-50 border border-blue-200 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] space-y-4 hidden">
-                <div class="flex justify-between items-center border-b border-blue-200 pb-2">
+            <!-- SECCIÓN 1.5: Datos del archivo (hoja, columnas y filas a analizar) -->
+            <section id="columnMappingSection" class="bg-blue-50 border border-blue-200 card-surface p-[24px] space-y-4 hidden">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-2 border-b border-blue-200 pb-2">
                     <div>
-                        <h3 class="text-lg font-semibold text-esap">🛠️ Mapeo Inteligente de Columnas Detectadas</h3>
-                        <p class="text-xs text-gray-600">Asocie cada campo de su archivo con las variables requeridas por el sistema:</p>
+                        <h3 class="text-lg font-semibold text-esap">📂 Datos del archivo: elige qué leer</h3>
+                        <p id="fileInfo" class="text-xs text-gray-600"></p>
                     </div>
-                    <span class="text-xs bg-blue-600 text-white px-3 py-1 rounded-full font-semibold">Compatible con cualquier CSV</span>
+                    <span id="selCounter" class="text-xs bg-blue-600 text-white px-3 py-1 rounded-full font-semibold self-start md:self-auto"></span>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre / Identificador:</label>
-                        <select id="mapNameCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
+
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div class="bg-white rounded-[12px] border border-[#dfe3e8] p-3"><p class="text-xs uppercase text-gray-600 font-semibold">Proyectos</p><p id="sumProyectos" class="text-lg font-bold text-esap">0</p></div>
+                    <div class="bg-white rounded-[12px] border border-[#dfe3e8] p-3"><p class="text-xs uppercase text-gray-600 font-semibold">Asignado total</p><p id="sumAsig" class="text-sm font-bold text-esap">—</p></div>
+                    <div class="bg-white rounded-[12px] border border-[#dfe3e8] p-3"><p class="text-xs uppercase text-gray-600 font-semibold">Ejecutado total</p><p id="sumEjec" class="text-sm font-bold text-esap">—</p></div>
+                    <div class="bg-white rounded-[12px] border border-[#dfe3e8] p-3"><p class="text-xs uppercase text-gray-600 font-semibold">% de ejecución</p><p id="sumPct" class="text-lg font-bold text-esap">—</p></div>
+                    <div class="bg-white rounded-[12px] border border-[#dfe3e8] p-3"><p class="text-xs uppercase text-gray-600 font-semibold">Filas con alertas</p><p id="sumProb" class="text-lg font-bold text-amber-600">0</p></div>
+                </div>
+                <div id="sourcesBox" class="hidden bg-white rounded-[12px] border border-[#dfe3e8] p-3 space-y-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <p class="text-xs font-bold text-gray-700 uppercase">Comparar archivos / hojas</p>
+                        <div class="flex gap-2 items-center"><select id="sourceSelect" class="rounded-[6px] border-[#dfe3e8] border p-1.5 text-xs text-esap max-w-[260px]"></select><button id="mergeSourcesBtn" type="button" class="text-xs bg-white border border-[#dfe3e8] rounded-[6px] px-2 py-1 hover:bg-gray-50">Unir todas en un solo conjunto</button></div>
+                    </div>
+                    <div class="overflow-x-auto"><table class="min-w-full text-xs text-left"><thead class="bg-gray-100 text-gray-700 font-semibold"><tr><th class="px-3 py-1.5">Fuente</th><th class="px-3 py-1.5">Filas</th><th class="px-3 py-1.5">Asignado</th><th class="px-3 py-1.5">Ejecutado</th><th class="px-3 py-1.5">% ejec.</th></tr></thead><tbody id="sourcesBody" class="divide-y divide-gray-200"></tbody></table></div>
+                    <p class="text-xs text-gray-600">La comparación usa las columnas elegidas abajo; las fuentes que no las tengan aparecen con "—".</p>
+                </div>
+                <div id="xlsxControls" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Hoja del Excel:</label>
+                        <select id="sheetSelect" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Modalidad de Ejecución:</label>
-                        <select id="mapModCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Presupuesto Asignado:</label>
-                        <select id="mapAsigCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Presupuesto Ejecutado:</label>
-                        <select id="mapEjecCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fila de encabezados:</label>
+                        <input type="number" id="headerRowInput" min="1" value="1" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap">
                     </div>
                 </div>
-                <div class="flex justify-end pt-2">
+
+                <div>
+                    <p class="text-xs font-bold text-gray-700 uppercase mb-2">Qué columna usar para cada variable:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-600 mb-1">Nombre / Identificador</label>
+                            <select id="mapNameCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600 mb-1">Modalidad de Ejecución</label>
+                            <select id="mapModCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600 mb-1">Presupuesto Asignado</label>
+                            <select id="mapAsigCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600 mb-1">Presupuesto Ejecutado</label>
+                            <select id="mapEjecCol" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white font-medium text-esap"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <p id="modWarn" class="hidden text-xs bg-amber-50 border border-amber-300 text-amber-900 rounded-[6px] p-2 mb-2"></p>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3 items-end">
+                        <div class="col-span-2"><label class="block text-xs text-gray-600 mb-1">Buscar texto en cualquier columna</label><input id="fltText" type="search" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white" placeholder="Ej: vía, escuela…"></div>
+                        <div><label class="block text-xs text-gray-600 mb-1">Modalidad</label><select id="fltMod" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white text-esap"></select></div>
+                        <div><label class="block text-xs text-gray-600 mb-1">Asignado mínimo</label><input id="fltMin" type="number" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white"></div>
+                        <div><label class="block text-xs text-gray-600 mb-1">Asignado máximo</label><input id="fltMax" type="number" class="w-full rounded-[6px] border-[#dfe3e8] border p-2 text-xs bg-white"></div>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <p class="text-xs font-bold text-gray-700 uppercase">Filas a incluir en el análisis:</p>
+                        <div class="flex gap-2">
+                            <button id="rowsAllBtn" type="button" class="text-xs bg-white border border-[#dfe3e8] rounded-[6px] px-2 py-1 hover:bg-gray-50">Marcar todas</button>
+                            <button id="rowsNoneBtn" type="button" class="text-xs bg-white border border-[#dfe3e8] rounded-[6px] px-2 py-1 hover:bg-gray-50">Quitar todas</button>
+                        </div>
+                    </div>
+                    <div class="overflow-auto max-h-72 border rounded-[6px] bg-white">
+                        <table id="rowPickerTable" class="min-w-full text-xs text-left">
+                            <thead class="bg-gray-100 text-gray-700 font-semibold sticky top-0"></thead>
+                            <tbody class="divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                    <p id="rowPickerNote" class="text-xs text-gray-600 mt-1"></p>
+                    <div class="legend-alerts"></div>
+                </div>
+
+                <div class="bg-white rounded-[12px] border border-[#dfe3e8] p-3 space-y-2">
+                    <div class="flex flex-wrap items-center gap-2"><p class="text-xs font-bold text-gray-700 uppercase">Exploración rápida de cualquier columna</p><select id="quickColSelect" class="rounded-[6px] border-[#dfe3e8] border p-1.5 text-xs text-esap max-w-[260px]"></select></div>
+                    <div id="quickColResult" class="text-xs text-gray-700"></div>
+                </div>
+                <div class="flex flex-col md:flex-row justify-between items-center gap-2 pt-2">
+                    <div class="space-y-1"><p class="text-xs text-gray-600">Los cambios se aplican solos: la vista previa y la validación de abajo se actualizan en vivo.</p><label class="flex items-center gap-2 text-xs text-gray-700"><input type="checkbox" id="excludeErr" checked> Excluir del cálculo las filas con valores vacíos, no numéricos o negativos (si no, se cuentan como 0)</label></div>
                     <button id="applyMappingBtn" class="bg-esap hover:bg-esap-dark text-white font-medium px-5 py-2 rounded-[6px] text-xs shadow transition">
-                        Confirmar Mapeo y Sincronizar Datos &rarr;
+                        Analizar lo seleccionado &rarr;
                     </button>
+                    <button id="forgetCfgBtn" type="button" class="text-xs text-gray-600 underline">Olvidar columnas recordadas</button>
                 </div>
             </section>
 
             <!-- SECCIÓN: Tabla Interactiva Manual -->
-            <section id="manualSection" class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] hidden space-y-4">
+            <section id="manualSection" class="bg-white card-surface p-[24px] border border-[#dfe3e8] hidden space-y-4">
                 <div class="flex justify-between items-center border-b pb-2">
                     <h3 class="text-lg font-semibold text-esap">Registro Manual de Datos</h3>
                     <button id="closeManualBtn" class="text-gray-400 hover:text-gray-600 text-sm font-bold">&times; Cerrar</button>
@@ -209,7 +298,7 @@
                                 <th class="px-3 py-2">Modalidad de Ejecución</th>
                                 <th class="px-3 py-2">Presupuesto Asignado (COP)</th>
                                 <th class="px-3 py-2">Presupuesto Ejecutado (COP)</th>
-                                <th class="px-3 py-2">Porcentaje Avance (%)</th>
+                                <th class="px-3 py-2">Ejecución (%)</th>
                                 <th class="px-3 py-2 text-center">Acción</th>
                             </tr>
                         </thead>
@@ -241,7 +330,7 @@
             </section>
 
             <!-- SECCIÓN 2: Vista Previa -->
-            <section id="previewSection" class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] space-y-4">
+            <section id="previewSection" class="bg-white card-surface p-[24px] border border-[#dfe3e8] space-y-4">
                 <h3 class="text-lg font-semibold text-esap">Vista Previa de Datos Cargados</h3>
                 <div class="overflow-x-auto max-h-60 border rounded-[6px]">
                     <table id="previewTable" class="min-w-full divide-y divide-gray-200 text-left text-xs">
@@ -254,19 +343,19 @@
 
         <!-- PESTAÑA 2: RESULTADOS Y ESTADÍSTICA -->
         <div id="tab2" class="space-y-[80px] hidden">
-            <div class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] flex flex-col lg:flex-row justify-between items-center gap-4 no-print">
+            <div class="bg-white card-surface p-[24px] border border-[#dfe3e8] flex flex-col lg:flex-row justify-between items-center gap-4 no-print">
                 <button id="backBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-[6px] text-sm transition">
                     &larr; Regresar al Ingreso
                 </button>
 
                 <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-[6px] border border-gray-200">
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-700 uppercase mb-0.5">Variable en Análisis:</label>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-0.5">Variable en Análisis:</label>
                         <select id="targetColumnTab2" class="rounded-[6px] border-[#dfe3e8] border p-1.5 text-xs w-60 bg-white font-medium text-esap shadow-sm">
                             <option value="modalidad_ejecucion" selected>modalidad_ejecucion (Cualitativa)</option>
                             <option value="presupuesto_ejecutado">presupuesto_ejecutado (Cuantitativa)</option>
                             <option value="presupuesto_asignado">presupuesto_asignado (Cuantitativa)</option>
-                            <option value="porcentaje_avance">porcentaje_avance (Cuantitativa)</option>
+                            <option value="porcentaje_avance">% de ejecución (Cuantitativa)</option>
                             <option value="nombre_proyecto">nombre_proyecto (Cualitativa)</option>
                         </select>
                     </div>
@@ -301,11 +390,12 @@
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="cardsGrid"></div>
+                
             </section>
 
            
             <!-- SECCIÓN 5: Tabla de Frecuencias con Paginación -->
-            <section class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] space-y-4">
+            <section class="bg-white card-surface p-[24px] border border-[#dfe3e8] space-y-4">
                 <div class="border-b pb-2 flex justify-between items-center">
                     <h3 id="freqTableTitle" class="text-lg font-semibold text-esap">Tabla de Frecuencias</h3>
                     <span id="freqTypeBadge" class="text-xs bg-blue-50 text-esap px-3 py-1 rounded-full font-semibold">Análisis Estadístico</span>
@@ -354,42 +444,60 @@
 
                 <div id="interpBox" class="hidden bg-blue-50 border-l-4 border-[#D4AF37] rounded-[6px] p-4 text-sm text-gray-700 space-y-1"></div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="chartsContainer">
-                    <div class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8]">
+                    <div class="bg-white card-surface p-[24px] border border-[#dfe3e8]">
                         <h4 id="chart1Title" class="font-semibold text-gray-700 mb-4 text-center text-sm">Histograma / Distribución Principal</h4>
                         <div class="relative h-64">
                             <canvas id="histogramChart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8]">
+                    <div class="bg-white card-surface p-[24px] border border-[#dfe3e8]">
                         <h4 id="chart2Title" class="font-semibold text-gray-700 mb-4 text-center text-sm">Distribución Secundaria</h4>
                         <div class="relative h-64">
                             <canvas id="secondaryChart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8]" id="boxplotCard">
+                    <div class="bg-white card-surface p-[24px] border border-[#dfe3e8]" id="boxplotCard">
                         <h4 id="chart3Title" class="font-semibold text-gray-700 mb-4 text-center text-sm">Cajas y Bigotes Real (Boxplot)</h4>
                         <div class="relative h-64">
                             <canvas id="boxplotChart"></canvas>
                         </div>
-                        <p class="text-[11px] text-gray-500 text-center mt-3 leading-snug">Caja: Q<sub>1</sub>–Q<sub>3</sub> · Línea: mediana · Punto dorado: media · Bigotes: límite 1,5×RIC · Puntos rojos: atípicos.<br>Pasa el cursor para ver Mín, Q1, Mediana, Q3 y Máx.</p>
+                        <p class="text-xs text-gray-600 text-center mt-3 leading-snug">Caja: Q<sub>1</sub>–Q<sub>3</sub> · Línea: mediana · Punto dorado: media · Bigotes: límite 1,5×RIC · Puntos rojos: atípicos.<br>Pasa el cursor para ver Mín, Q1, Mediana, Q3 y Máx.</p>
                     </div>
                 </div>
             </section>
 
-            <!-- SECCIÓN 7: Conclusiones Inteligentes -->
-            <section class="bg-white rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] p-[24px] border border-[#dfe3e8] space-y-3">
-                <h3 class="text-lg font-semibold text-esap">Interpretación y Conclusiones Estadísticas Gerenciales</h3>
-                <div id="conclusionsText" class="text-sm text-gray-700 space-y-3 bg-gray-50 p-4 rounded-[6px] border"></div>
+            <!-- SECCIÓN 7: Asistente de IA -->
+            <section id="aiSection" class="bg-white card-surface p-[24px] border border-[#dfe3e8] space-y-3">
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-esap text-white flex items-center justify-center text-lg">🤖</div>
+                        <div><h3 class="text-lg font-semibold text-esap">Asistente de IA · </h3><p id="aiModeLabel" class="text-xs text-gray-600"></p></div>
+                    </div>
+                    <div class="flex gap-2 no-print"><button id="aiSettingsBtn" type="button" class="text-xs bg-white border border-[#dfe3e8] rounded-[6px] px-2 py-1 hover:bg-gray-50">⚙️ IA avanzada</button><button id="aiClearBtn" type="button" class="text-xs bg-white border border-[#dfe3e8] rounded-[6px] px-2 py-1 hover:bg-gray-50">Limpiar chat</button></div>
+                </div>
+                <div id="aiSettings" class="hidden no-print bg-amber-50 border border-amber-300 rounded-[6px] p-3 text-xs text-amber-900 space-y-2">
+                    <p><b>Modo IA avanzada (opcional).</b> Si pegas una clave de API de Anthropic, las preguntas se envían a Claude con los resultados del simulador como contexto.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2"><input id="aiKey" type="password" autocomplete="off" placeholder="Clave de API (sk-ant-…)" class="md:col-span-2 rounded-[6px] border p-2 text-xs bg-white"><input id="aiModel" type="text" value="claude-sonnet-5-5" class="rounded-[6px] border p-2 text-xs bg-white"></div>
+                    <div class="flex flex-wrap gap-2 items-center"><button id="aiKeySave" type="button" class="bg-esap text-white px-3 py-1 rounded-[6px]">Guardar y activar</button><button id="aiKeyDel" type="button" class="bg-white border px-3 py-1 rounded-[6px]">Quitar clave</button></div>
+                    <p>⚠️ La clave se guarda solo mientras esta pestaña esté abierta y los datos de tus proyectos (nombres y presupuestos) se envían a la API de Anthropic. Úsalo solo en tu computador personal y con datos que puedas compartir; el uso de la API tiene costo.</p>
+                </div>
+                <div id="aiChat" class="h-96 overflow-y-auto space-y-3 bg-gray-50 p-4 rounded-[6px] border">
+                    <div class="flex gap-2"><div class="w-7 h-7 shrink-0 rounded-full bg-esap text-white flex items-center justify-center text-sm">🤖</div><div class="ai-bot rounded-[12px] p-3 max-w-[90%]"><p class="text-xs uppercase font-bold text-esap mb-1">Resumen automático del informe</p><div id="conclusionsText" class="text-sm space-y-3"></div></div></div>
+                </div>
+                <div id="aiChips" class="flex flex-wrap gap-2 no-print"></div>
+                <div class="flex gap-2 no-print"><input id="aiInput" type="text" placeholder="Pregunta sobre los resultados, ej: ¿qué significa la desviación estándar? ¿qué proyectos están críticos?" class="flex-1 rounded-[6px] border-[#dfe3e8] border p-2.5 text-sm bg-white"><button id="aiSend" type="button" class="bg-esap hover:bg-esap-dark text-white font-medium px-5 py-2 rounded-[6px] text-sm">Enviar</button></div>
+                <p class="text-xs text-gray-600">Las respuestas se basan en los datos cargados y en la variable y filtro elegidos arriba. Verifica las cifras antes de usarlas en un informe oficial.</p>
             </section>
         </div>
 
     </main>
 
     <!-- Footer flotante minimalista estilo Things -->
-    <footer class="bg-transparent text-[#838b96] py-12 mt-16 text-center text-xs no-print">
-        <div class="max-w-[960px] mx-auto px-4 flex flex-col items-center justify-center space-y-2">
-            <p class="font-medium text-[#55606e]">Sistema Integrado de Datos y Estadística para Proyectos</p>
-            <p class="text-[#9299a4]">Diseño minimalista institucional con estética editorial.</p>
+    <footer class="text-[#55606e] py-10 mt-16 text-center text-xs">
+        <div class="max-w-[960px] mx-auto px-4 space-y-2">
+            <p class="font-medium">S.I.D.E.P. · Escuela Superior de Administración Pública (ESAP)</p>
+            <p>Elaborado por: <span contenteditable="true" class="border-b border-dashed border-gray-400 px-1">Alejandra Garcia, Julian Paz, Freddy Chocue, Fabian Leyton</span> · Materia: <span contenteditable="true" class="border-b border-dashed border-gray-400 px-1">Inteligencia Artificial y Big Data</span> · 
+            
         </div>
     </footer>
 
@@ -406,7 +514,7 @@
 
         const VAR_LABELS = {
             modalidad_ejecucion: 'Modalidad de ejecución', presupuesto_ejecutado: 'Presupuesto ejecutado',
-            presupuesto_asignado: 'Presupuesto asignado', porcentaje_avance: '% de avance', nombre_proyecto: 'Nombre del proyecto'
+            presupuesto_asignado: 'Presupuesto asignado', porcentaje_avance: '% de ejecución financiera', nombre_proyecto: 'Nombre del proyecto'
         };
         const esc = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
         function parseNum(v) {
@@ -458,15 +566,24 @@
         let secChartInstance = null;
         let boxChartInstance = null;
         let selectedMunicipality = "Popayán";
+        let isSimulated = false;
+        function setSimulated(v) { isSimulated = !!v; const b = document.getElementById('simBanner'); if (b) b.classList.toggle('hidden', !isSimulated); }
+        function skewInfo(mean, median, sd) { const sk = sd > 0 ? 3 * (mean - median) / sd : 0; return { sk, kind: Math.abs(sk) < 0.1 ? 'sym' : sk > 0 ? 'right' : 'left' }; }
+        const SKEW_TXT = { sym: 'aproximadamente simétrica', right: 'asimétrica a la derecha (pocos valores altos elevan el promedio)', left: 'asimétrica a la izquierda (pocos valores bajos reducen el promedio)' };
 
         let freqTableRowsCache = [];
         let currentFreqPage = 1;
         const itemsPerPage = 10;
 
+        function updateContext() { const t = document.getElementById('contextInput'); if (t.dataset.edited !== '1') t.value = `Estadística Descriptiva - Proyectos en el municipio de ${selectedMunicipality}.`; }
+        document.getElementById('contextInput').addEventListener('input', (e) => { e.target.dataset.edited = '1'; });
         document.getElementById('municipalitySelect').addEventListener('change', (e) => {
-            selectedMunicipality = e.target.value;
-            document.getElementById('contextInput').value = `Estadística Descriptiva - Proyectos en el municipio de ${selectedMunicipality}.`;
+            const mc = document.getElementById('municipalityCustom');
+            if (e.target.value === '__otro') { mc.classList.remove('hidden'); selectedMunicipality = mc.value.trim() || 'Otro municipio'; mc.focus(); }
+            else { mc.classList.add('hidden'); selectedMunicipality = e.target.value; }
+            updateContext();
         });
+        document.getElementById('municipalityCustom').addEventListener('input', (e) => { selectedMunicipality = e.target.value.trim() || 'Otro municipio'; updateContext(); });
 
         function formatCOP(val) {
             return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
@@ -542,10 +659,8 @@
 
         // Datos Automáticos con la variable Modalidad de Ejecución
         document.getElementById('autoDataBtn').addEventListener('click', () => {
-            let inputVal = prompt("¿Cuántos datos automáticos deseas generar? (Mínimo 30):", "30");
-            if (inputVal === null) return;
-            let count = parseInt(inputVal);
-            if (isNaN(count) || count < 30) count = 30;
+            let count = parseInt(document.getElementById('autoCount').value);
+            if (isNaN(count) || count < 30) count = 30; if (count > 2000) count = 2000;
 
             const nombres = ["Acueducto Veredal", "Parque Biosaludable", "Dotación Escolar", "Vías Rurales", "Seguridad Alimentaria", "Puesto de Salud", "Emprendimiento Local", "Polideportivo Municipal", "Gestión Ambiental", "Alumbrado Público"];
             let data = [];
@@ -561,11 +676,11 @@
                     porcentaje_avance: Number(((ejec / asig) * 100).toFixed(1))
                 });
             }
-            rawData = data;
+            rawData = data; setSimulated(true);
             document.getElementById('columnMappingSection').classList.add('hidden');
             applyFiltersAndRun();
             displayPreview(rawData);
-            notify(`¡Se generaron exitosamente ${count} registros automáticos para ${selectedMunicipality}!`);
+            notify(`¡Se generaron exitosamente ${count} registros simulados para ${selectedMunicipality}!`);
         });
 
         document.getElementById('saveManualTableBtn').addEventListener('click', () => {
@@ -580,75 +695,409 @@
                     porcentaje_avance: Number(row.querySelector('.avance-input').value) || 0
                 });
             });
-            rawData = dataArr;
+            rawData = dataArr; setSimulated(false);
             applyFiltersAndRun();
             displayPreview(rawData);
             document.getElementById('manualSection').classList.add('hidden');
             notify(`¡Guardados ${rawData.length} registros con éxito!`);
         });
 
-        // CARGA DE CSV
-        document.getElementById('csvFile').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            Papa.parse(file, {
-                header: true, dynamicTyping: true, skipEmptyLines: true,
-                complete: function(results) {
-                    if (!results.data || results.data.length === 0) {
-                        notify("El archivo CSV está vacío.");
-                        return;
-                    }
-                    rawCsvParsedRows = results.data;
-                    csvHeaders = Object.keys(rawCsvParsedRows[0]);
-                    const mapName = document.getElementById('mapNameCol');
-                    const mapMod = document.getElementById('mapModCol');
-                    const mapAsig = document.getElementById('mapAsigCol');
-                    const mapEjec = document.getElementById('mapEjecCol');
-                    mapName.innerHTML = ''; mapMod.innerHTML = ''; mapAsig.innerHTML = ''; mapEjec.innerHTML = '';
+        // CARGA DE ARCHIVO (CSV o Excel): datos en vivo, filtros, alertas, comparación y progreso
+        let activeRows = [], excludedRows = new Set(), xlsxWb = null, currentFileName = '', datasets = [], rowFlags = [], rawIdx = [];
+        const PICKER_MAX = 200, CFG_KEY = 'esap_cfg_v1';
+        const mapIds = ['mapNameCol', 'mapModCol', 'mapAsigCol', 'mapEjecCol'];
+        const $ = (id) => document.getElementById(id);
+        const tick = () => new Promise(r => setTimeout(r, 0));
+        const isEmpty = (v) => v === null || v === undefined || String(v).trim() === '';
+        const LEGEND = '<p class="text-xs text-gray-600 mt-1 flex flex-wrap gap-2"><span class="row-err px-2 rounded">Vacío, no numérico o negativo</span><span class="row-warn px-2 rounded">Ejecutado &gt; asignado</span><span class="row-dup px-2 rounded">Nombre repetido</span></p>';
 
-                    csvHeaders.forEach(h => {
-                        let opt1 = document.createElement('option'); opt1.value = h; opt1.textContent = h;
-                        let opt2 = document.createElement('option'); opt2.value = h; opt2.textContent = h;
-                        let opt3 = document.createElement('option'); opt3.value = h; opt3.textContent = h;
-                        let opt4 = document.createElement('option'); opt4.value = h; opt4.textContent = h;
-                        mapName.appendChild(opt1); mapMod.appendChild(opt2); mapAsig.appendChild(opt3); mapEjec.appendChild(opt4);
-                    });
-                    const pick = (sel, inc, exc = []) => { const i = csvHeaders.findIndex(h => { const l = String(h).toLowerCase(); return inc.some(k => l.includes(k)) && !exc.some(k => l.includes(k)); }); if (i >= 0) sel.selectedIndex = i; };
-                    pick(mapName, ['nombre', 'proyecto', 'item'], ['modalid', 'presupuesto']);
-                    pick(mapMod, ['modalid', 'tipo', 'contrat'], ['presupuesto', 'valor']);
-                    pick(mapAsig, ['asignad', 'presupuesto', 'valor'], ['ejecut', 'pagad']);
-                    pick(mapEjec, ['ejecutad', 'ejecut', 'pagad'], ['modalid', 'ejecuc']);
-                    document.getElementById('columnMappingSection').classList.remove('hidden');
-                    notify(`Archivo CSV cargado. Confirme el mapeo de campos abajo.`);
-                }
+        function progressSet(pct, text) {
+            $('loadProgress').classList.remove('hidden'); $('loadProgressText').textContent = text;
+            const b = $('loadProgressBar'); b.style.width = (pct == null ? 100 : Math.max(2, Math.min(100, pct))) + '%'; b.classList.toggle('animate-pulse', pct == null);
+        }
+        function progressEnd() { setTimeout(() => $('loadProgress').classList.add('hidden'), 400); }
+
+        function loadCfg() { try { return JSON.parse(localStorage.getItem(CFG_KEY) || 'null') || {}; } catch (e) { return {}; } }
+        function saveCfg() {
+            try { localStorage.setItem(CFG_KEY, JSON.stringify({ sheet: xlsxWb ? $('sheetSelect').value : null, headerRow: parseInt($('headerRowInput').value) || 1,
+                map: { name: $('mapNameCol').value, mod: $('mapModCol').value, asig: $('mapAsigCol').value, ejec: $('mapEjecCol').value } })); } catch (e) {}
+        }
+        function curCols() { return { name: $('mapNameCol').value, mod: $('mapModCol').value, asig: $('mapAsigCol').value, ejec: $('mapEjecCol').value }; }
+
+        function pickCol(sel, inc, exc = []) {
+            const i = csvHeaders.findIndex(h => { const l = String(h).toLowerCase(); return inc.some(k => l.includes(k)) && !exc.some(k => l.includes(k)); });
+            if (i >= 0) sel.selectedIndex = i;
+        }
+        function cellVal(c) {
+            let v = c.value;
+            if (v === null || v === undefined) return null;
+            if (v instanceof Date) return v.toISOString().slice(0, 10);
+            if (typeof v === 'object') {
+                if ('result' in v) v = v.result; else if (v.richText) v = v.richText.map(t => t.text).join(''); else if (v.text !== undefined) v = v.text; else if (v.error) v = null;
+                if (v instanceof Date) v = v.toISOString().slice(0, 10);
+            }
+            return v === undefined ? null : v;
+        }
+        async function sheetToRows(ws, headerRow, label) {
+            const headers = [];
+            ws.getRow(headerRow).eachCell({ includeEmpty: true }, (c, i) => { let h = String(cellVal(c) ?? '').trim() || `Columna ${i}`; while (headers.includes(h)) h += '_2'; headers[i - 1] = h; });
+            const hs = Array.from(headers, (h, i) => h || `Columna ${i + 1}`), rows = [], total = ws.rowCount - headerRow;
+            for (let r = headerRow + 1; r <= ws.rowCount; r++) {
+                const row = ws.getRow(r), obj = {}; let any = false;
+                hs.forEach((h, i) => { const v = cellVal(row.getCell(i + 1)); obj[h] = v; if (!isEmpty(v)) any = true; });
+                if (any) rows.push(obj);
+                if (label && total > 1500 && (r - headerRow) % 500 === 0) { progressSet(50 + (r - headerRow) / total * 50, `${label}: procesando filas… ${Math.round((r - headerRow) / total * 100)}%`); await tick(); }
+            }
+            return { headers: hs, rows };
+        }
+        function guessHeaderRow(ws) {
+            for (let r = 1; r <= Math.min(ws.rowCount, 20); r++) { let n = 0; ws.getRow(r).eachCell({ includeEmpty: false }, c => { if (String(cellVal(c) ?? '').trim()) n++; }); if (n >= 2) return r; }
+            return 1;
+        }
+        function readFileBuffer(file) {
+            return new Promise((res, rej) => {
+                const fr = new FileReader();
+                fr.onprogress = e => { if (e.lengthComputable) progressSet(e.loaded / e.total * 50, `${file.name}: leyendo archivo… ${Math.round(e.loaded / e.total * 100)}%`); };
+                fr.onload = () => res(fr.result); fr.onerror = () => rej(fr.error); fr.readAsArrayBuffer(file);
             });
+        }
+        function parseCsv(file) {
+            return new Promise(resolve => {
+                const rows = []; let fields = [];
+                Papa.parse(file, { header: true, dynamicTyping: true, skipEmptyLines: true, chunkSize: 262144,
+                    chunk: (res) => { if (!fields.length && res.meta && res.meta.fields) fields = res.meta.fields; for (const d of res.data) rows.push(d); progressSet(Math.min(100, res.meta.cursor / file.size * 100), `${file.name}: leyendo… ${Math.min(100, Math.round(res.meta.cursor / file.size * 100))}%`); },
+                    complete: () => resolve({ rows, fields: fields.length ? fields : (rows[0] ? Object.keys(rows[0]) : []) }), error: () => resolve({ rows: [], fields: [] }) });
+            });
+        }
+        async function readWorkbook(file) {
+            if (typeof ExcelJS === 'undefined') { notify('No se pudo cargar la librería de Excel (¿sin conexión?). Guarda el archivo como CSV e inténtalo de nuevo.'); return null; }
+            try { const wb = new ExcelJS.Workbook(); progressSet(null, `${file.name}: interpretando Excel…`); await wb.xlsx.load(await readFileBuffer(file)); return wb; }
+            catch (e) { notify('No se pudo leer el Excel. Verifica que sea un .xlsx válido y sin contraseña.'); return null; }
+        }
+        async function sheetDatasets(wb, fname) {
+            const out = [];
+            for (const ws of wb.worksheets.filter(w => w.rowCount > 0)) { const { headers, rows } = await sheetToRows(ws, guessHeaderRow(ws), null); if (rows.length) out.push({ label: `${fname} · ${ws.name}`, sheet: ws.name, rows, headers }); }
+            return out;
+        }
+
+        async function loadSheet(name, headerRow) {
+            const ws = xlsxWb.getWorksheet(name); if (!ws) return;
+            const hr = headerRow || guessHeaderRow(ws); $('headerRowInput').value = hr;
+            const { headers, rows } = await sheetToRows(ws, hr, currentFileName);
+            progressEnd();
+            if (!rows.length) notify(`La hoja "${name}" no tiene datos debajo de la fila ${hr}.`);
+            loadTable(rows, headers, `${currentFileName} · hoja "${name}"`, true);
+        }
+        async function loadXlsx(file) {
+            const wb = await readWorkbook(file); if (!wb) { progressEnd(); return; }
+            xlsxWb = wb;
+            const sheets = wb.worksheets.filter(w => w.rowCount > 0);
+            if (!sheets.length) { notify('El Excel no tiene hojas con datos.'); progressEnd(); return; }
+            $('sheetSelect').innerHTML = sheets.map(w => `<option value="${esc(w.name)}">${esc(w.name)} (${w.rowCount} filas)</option>`).join('');
+            const cfg = loadCfg(), saved = cfg.sheet && sheets.find(w => w.name === cfg.sheet), first = saved ? cfg.sheet : sheets[0].name;
+            $('sheetSelect').value = first;
+            await loadSheet(first, saved ? cfg.headerRow : null);
+            if (sheets.length > 1) { datasets = await sheetDatasets(wb, file.name); renderSources(); }
+        }
+        async function fileToDatasets(file) {
+            const n = file.name.toLowerCase();
+            if (/\.(xlsx|xlsm)$/.test(n)) { const wb = await readWorkbook(file); return wb ? sheetDatasets(wb, file.name) : []; }
+            if (n.endsWith('.xls')) { notify(`${file.name}: formato .xls antiguo, guárdalo como .xlsx o CSV.`); return []; }
+            const { rows, fields } = await parseCsv(file); return rows.length ? [{ label: file.name, rows, headers: fields }] : [];
+        }
+        async function handleFile(file) {
+            currentFileName = file.name; datasets = []; renderSources();
+            const n = file.name.toLowerCase();
+            if (/\.(xlsx|xlsm)$/.test(n)) { await loadXlsx(file); return; }
+            if (n.endsWith('.xls')) { notify('Formato .xls antiguo: ábrelo en Excel y guárdalo como .xlsx o CSV.'); return; }
+            xlsxWb = null;
+            const { rows, fields } = await parseCsv(file); progressEnd();
+            if (!rows.length) { notify('El archivo está vacío.'); return; }
+            loadTable(rows, fields, file.name, false);
+        }
+        async function handleFiles(list) {
+            const files = Array.from(list || []); if (!files.length) return;
+            if (files.length === 1) { await handleFile(files[0]); return; }
+            xlsxWb = null; datasets = [];
+            for (const f of files) datasets.push(...await fileToDatasets(f));
+            progressEnd();
+            if (!datasets.length) { notify('No se pudo leer ningún archivo.'); return; }
+            currentFileName = `${files.length} archivos`;
+            loadTable(datasets[0].rows, datasets[0].headers, datasets[0].label, false);
+        }
+
+        function loadTable(rows, headers, label, isXlsx) {
+            setSimulated(false); rawCsvParsedRows = rows; csvHeaders = headers; excludedRows = new Set();
+            const opts = headers.map(h => `<option value="${esc(h)}">${esc(h)}</option>`).join('');
+            mapIds.forEach(id => { $(id).innerHTML = opts; });
+            pickCol($('mapNameCol'), ['nombre', 'proyecto', 'item'], ['modalid', 'presupuesto']);
+            pickCol($('mapModCol'), ['modalid', 'tipo', 'contrat'], ['presupuesto', 'valor']);
+            pickCol($('mapAsigCol'), ['asignad', 'presupuesto', 'valor'], ['ejecut', 'pagad']);
+            pickCol($('mapEjecCol'), ['ejecutad', 'ejecut', 'pagad'], ['modalid', 'ejecuc']);
+            const cm = loadCfg().map || {};
+            [['mapNameCol', 'name'], ['mapModCol', 'mod'], ['mapAsigCol', 'asig'], ['mapEjecCol', 'ejec']].forEach(([id, k]) => { if (cm[k] && headers.includes(cm[k])) $(id).value = cm[k]; });
+            ['fltText', 'fltMin', 'fltMax'].forEach(id => { $(id).value = ''; });
+            fillModOptions();
+            $('quickColSelect').innerHTML = '<option value="">Elige una columna…</option>' + opts;
+            $('xlsxControls').classList.toggle('hidden', !isXlsx);
+            $('fileInfo').textContent = `${label} · ${rows.length} filas · ${headers.length} columnas`;
+            $('columnMappingSection').classList.remove('hidden');
+            renderRowPicker(); applyMapping(true); renderSources();
+            notify(`Archivo cargado: ${rows.length} filas. Ya puedes elegir hoja, columnas y filas.`);
+            $('columnMappingSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        function fillModOptions() {
+            const sel = $('fltMod'), col = $('mapModCol').value, prev = sel.value;
+            const vals = [...new Set(rawCsvParsedRows.map(r => String(r[col] ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')).slice(0, 100);
+            sel.innerHTML = '<option value="">Todas las modalidades</option>' + vals.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+            if (vals.includes(prev)) sel.value = prev;
+        }
+        function renderRowPicker() {
+            const cols = csvHeaders.slice(0, 6);
+            document.querySelector('#rowPickerTable thead').innerHTML = '<tr><th class="px-3 py-2 w-8"><input type="checkbox" id="rowsMaster" checked></th><th class="px-3 py-2">#</th>' + cols.map(h => `<th class="px-3 py-2">${esc(h)}</th>`).join('') + '</tr>';
+            document.querySelector('#rowPickerTable tbody').innerHTML = rawCsvParsedRows.slice(0, PICKER_MAX).map((r, i) =>
+                `<tr><td class="px-3 py-1.5"><input type="checkbox" class="row-pick" data-i="${i}" ${excludedRows.has(i) ? '' : 'checked'}></td><td class="px-3 py-1.5 text-gray-400">${i + 1}</td>` +
+                cols.map(h => `<td class="px-3 py-1.5">${esc(String(r[h] ?? '').slice(0, 40))}</td>`).join('') + '</tr>').join('');
+            $('rowPickerNote').textContent = rawCsvParsedRows.length > PICKER_MAX
+                ? `Se muestran las primeras ${PICKER_MAX} filas para elegir; las demás (${rawCsvParsedRows.length - PICKER_MAX}) se incluyen siempre. Se muestran ${cols.length} de ${csvHeaders.length} columnas.`
+                : `Se muestran ${cols.length} de ${csvHeaders.length} columnas.`;
+            document.querySelectorAll('.legend-alerts').forEach(e => { e.innerHTML = LEGEND; });
+        }
+
+        function passesFilters(row, c) {
+            const t = $('fltText').value.trim().toLowerCase();
+            if (t && !csvHeaders.some(h => String(row[h] ?? '').toLowerCase().includes(t))) return false;
+            const m = $('fltMod').value; if (m && String(row[c.mod] ?? '').trim() !== m) return false;
+            const mn = $('fltMin').value, mx = $('fltMax').value;
+            if (mn !== '' || mx !== '') { const a = parseNum(row[c.asig]); if (mn !== '' && a < Number(mn)) return false; if (mx !== '' && a > Number(mx)) return false; }
+            return true;
+        }
+        function computeFlags(c) {
+            const names = {}; rawCsvParsedRows.forEach(r => { const n = String(r[c.name] ?? '').trim(); if (n) names[n] = (names[n] || 0) + 1; });
+            rowFlags = rawCsvParsedRows.map(r => {
+                const bad = (col) => isEmpty(r[col]) || !/\d/.test(String(r[col])), a = parseNum(r[c.asig]), e = parseNum(r[c.ejec]);
+                if (isEmpty(r[c.name]) || bad(c.asig) || bad(c.ejec) || a < 0 || e < 0) return 'err';
+                if (a > 0 && e > a) return 'warn';
+                return names[String(r[c.name]).trim()] > 1 ? 'dup' : '';
+            });
+        }
+        const FLAG_TXT = { err: 'Dato vacío, no numérico o negativo', warn: 'Ejecutado mayor que asignado', dup: 'Nombre repetido' };
+        function paintRow(tr, flag) { tr.classList.remove('row-err', 'row-warn', 'row-dup'); tr.removeAttribute('title'); if (flag) { tr.classList.add('row-' + flag); tr.title = FLAG_TXT[flag]; } }
+        function paintViews(c) {
+            document.querySelectorAll('#rowPickerTable tbody tr').forEach(tr => {
+                const i = Number(tr.querySelector('.row-pick').dataset.i); paintRow(tr, rowFlags[i]);
+                tr.classList.toggle('row-off', !passesFilters(rawCsvParsedRows[i], c));
+            });
+            document.querySelectorAll('#previewTable tbody tr').forEach((tr, k) => paintRow(tr, rowFlags[rawIdx[k]]));
+            if (!$('previewLegend')) { const w = document.querySelector('#previewSection .overflow-x-auto'); if (w) w.insertAdjacentHTML('afterend', '<div id="previewLegend">' + LEGEND + '</div>'); }
+        }
+        function updateSummary(c) {
+            const sa = rawData.reduce((q, r) => q + r.presupuesto_asignado, 0), se = rawData.reduce((q, r) => q + r.presupuesto_ejecutado, 0);
+            $('sumProyectos').textContent = rawData.length.toLocaleString('es-CO'); $('sumAsig').textContent = formatCOP(sa); $('sumEjec').textContent = formatCOP(se);
+            $('sumPct').textContent = sa > 0 ? (se / sa * 100).toFixed(1) + '%' : '—';
+            $('sumProb').textContent = rowFlags.filter(Boolean).length.toLocaleString('es-CO');
+            const noMod = activeRows.filter(r => isEmpty(r[c.mod])).length, w = $('modWarn');
+            w.classList.toggle('hidden', !noMod);
+            if (noMod) w.textContent = `⚠️ ${noMod} de ${activeRows.length} filas no tienen valor en la columna de modalidad elegida. Se agrupan como «Sin especificar»; revisa que sea la columna correcta.`;
+        }
+        function renderQuick() {
+            const col = $('quickColSelect').value, out = $('quickColResult');
+            if (!col || !activeRows.length) { out.innerHTML = '<span class="text-gray-600">Elige una columna para ver un resumen rápido de las filas seleccionadas.</span>'; return; }
+            const vals = activeRows.map(r => r[col]).filter(v => !isEmpty(v)), empt = activeRows.length - vals.length;
+            const numLike = v => typeof v === 'number' ? isFinite(v) : /^[\s$€]*-?[\d.,]+\s*%?\s*$/.test(String(v));
+            const f = (v) => v.toLocaleString('es-CO', { maximumFractionDigits: 2 });
+            if (vals.length && vals.filter(numLike).length / vals.length >= 0.8) {
+                const nums = vals.filter(numLike).map(parseNum), st = statsOf(nums), sum = nums.reduce((q, x) => q + x, 0);
+                out.innerHTML = `<p class="mb-1">Columna <b>numérica</b> · ${st.n} valores · ${empt} vacíos</p><div class="grid grid-cols-2 md:grid-cols-4 gap-2">` +
+                    [['Suma', sum], ['Media', st.mean], ['Mediana', st.median], ['Desv. estándar', st.sd], ['Mínimo', st.min], ['Máximo', st.max], ['Q1', st.q1], ['Q3', st.q3]].map(([l, v]) => `<div class="bg-gray-50 border border-[#dfe3e8] rounded-[6px] p-2"><span class="text-xs uppercase text-gray-600">${l}</span><br><b>${f(v)}</b></div>`).join('') + '</div>';
+            } else {
+                const cnt = new Map(); vals.forEach(v => { const k = String(v).trim(); cnt.set(k, (cnt.get(k) || 0) + 1); });
+                const top = [...cnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+                out.innerHTML = `<p class="mb-1">Columna <b>categórica</b> · ${vals.length} valores · ${cnt.size} distintos · ${empt} vacíos</p>` +
+                    top.map(([k, n]) => { const pc = n / vals.length * 100; return `<div class="flex items-center gap-2 mb-1"><span class="w-48 truncate" title="${esc(k)}">${esc(k)}</span><div class="flex-1 h-2 bg-gray-200 rounded"><div class="h-2 bg-esap rounded" style="width:${pc}%"></div></div><span class="w-24 text-right">${n} (${pc.toFixed(1)}%)</span></div>`; }).join('');
+            }
+        }
+        function renderSources() {
+            const box = $('sourcesBox'); if (datasets.length < 2) { box.classList.add('hidden'); return; }
+            const c = curCols(), idx = xlsxWb ? datasets.findIndex(d => d.sheet === $('sheetSelect').value) : datasets.findIndex(d => d.rows === rawCsvParsedRows);
+            $('sourceSelect').innerHTML = (idx < 0 ? '<option value="-1">Unión de fuentes</option>' : '') + datasets.map((d, i) => `<option value="${i}">${esc(d.label)}</option>`).join('');
+            $('sourceSelect').value = String(idx);
+            $('sourcesBody').innerHTML = datasets.map(d => {
+                const ok = d.headers.includes(c.asig) && d.headers.includes(c.ejec); let a = 0, e = 0;
+                if (ok) d.rows.forEach(r => { a += parseNum(r[c.asig]); e += parseNum(r[c.ejec]); });
+                return `<tr><td class="px-3 py-1.5">${esc(d.label)}</td><td class="px-3 py-1.5">${d.rows.length}</td><td class="px-3 py-1.5">${ok ? formatCOP(a) : '—'}</td><td class="px-3 py-1.5">${ok ? formatCOP(e) : '—'}</td><td class="px-3 py-1.5">${ok && a > 0 ? (e / a * 100).toFixed(1) + '%' : '—'}</td></tr>`;
+            }).join('');
+            box.classList.remove('hidden');
+        }
+
+        function applyMapping(live) {
+            const c = curCols(); computeFlags(c); rawIdx = [];
+            const skipBad = !$('excludeErr') || $('excludeErr').checked; let invalidSkipped = 0;
+            const numBad = (r) => [c.asig, c.ejec].some(col => isEmpty(r[col]) || !/\d/.test(String(r[col]))) || parseNum(r[c.asig]) < 0 || parseNum(r[c.ejec]) < 0;
+            rawData = rawCsvParsedRows.flatMap((row, idx) => {
+                if (excludedRows.has(idx) || !passesFilters(row, c)) return [];
+                if (skipBad && numBad(row)) { invalidSkipped++; return []; }
+                rawIdx.push(idx);
+                const asigVal = parseNum(row[c.asig]), ejecVal = parseNum(row[c.ejec]);
+                return [{
+                    nombre_proyecto: row[c.name] !== undefined && row[c.name] !== null ? String(row[c.name]) : `Proyecto ${idx + 1}`,
+                    modalidad_ejecucion: !isEmpty(row[c.mod]) ? String(row[c.mod]).trim() : 'Sin especificar',
+                    presupuesto_asignado: asigVal, presupuesto_ejecutado: ejecVal,
+                    porcentaje_avance: asigVal > 0 ? Number(((ejecVal / asigVal) * 100).toFixed(1)) : 0
+                }];
+            });
+            activeRows = rawIdx.map(i => rawCsvParsedRows[i]);
+            $('selCounter').textContent = `${activeRows.length} de ${rawCsvParsedRows.length} filas seleccionadas${invalidSkipped ? ` · ${invalidSkipped} excluidas por datos inválidos` : ''}`;
+            updateSummary(c); renderQuick();
+            if (!rawData.length) { filteredData = []; paintViews(c); if (!live) notify('No hay filas seleccionadas.'); return; }
+            applyFiltersAndRun(); displayPreview(rawData); validateCsv(c.name, c.asig, c.ejec); paintViews(c);
+        }
+
+        $('csvFile').addEventListener('change', (e) => handleFiles(e.target.files));
+        (function () {
+            const dz = $('dropZone');
+            ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add('border-esap', 'bg-blue-50'); }));
+            ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('border-esap', 'bg-blue-50'); }));
+            dz.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
+        })();
+        $('sheetSelect').addEventListener('change', (e) => { saveCfg(); loadSheet(e.target.value, null); });
+        $('headerRowInput').addEventListener('change', (e) => { if (xlsxWb) { saveCfg(); loadSheet($('sheetSelect').value, Math.max(1, parseInt(e.target.value) || 1)); } });
+        mapIds.forEach(id => $(id).addEventListener('change', () => { if (id === 'mapModCol') fillModOptions(); saveCfg(); applyMapping(true); renderSources(); }));
+        ['fltText', 'fltMod', 'fltMin', 'fltMax'].forEach(id => $(id).addEventListener(id === 'fltText' || id === 'fltMin' || id === 'fltMax' ? 'input' : 'change', () => applyMapping(true)));
+        $('quickColSelect').addEventListener('change', renderQuick);
+        $('sourceSelect').addEventListener('change', (e) => {
+            const d = datasets[Number(e.target.value)]; if (!d) return;
+            if (xlsxWb && d.sheet) { $('sheetSelect').value = d.sheet; loadSheet(d.sheet, null); } else loadTable(d.rows, d.headers, d.label, false);
+        });
+        $('mergeSourcesBtn').addEventListener('click', () => {
+            const base = datasets[0], same = datasets.filter(d => d.headers.length === base.headers.length && d.headers.every(h => base.headers.includes(h))), rows = [];
+            same.forEach(d => d.rows.forEach(r => rows.push({ ...r, Origen: d.label })));
+            loadTable(rows, [...base.headers, 'Origen'], `Unión de ${same.length} fuentes`, false);
+            notify(same.length < datasets.length ? `Se unieron ${same.length} fuentes; ${datasets.length - same.length} se omitieron por tener columnas distintas.` : `Se unieron ${same.length} fuentes en un solo conjunto.`);
+        });
+        document.querySelector('#rowPickerTable tbody').addEventListener('change', (e) => {
+            if (!e.target.classList.contains('row-pick')) return;
+            const i = Number(e.target.dataset.i); e.target.checked ? excludedRows.delete(i) : excludedRows.add(i); applyMapping(true);
+        });
+        document.querySelector('#rowPickerTable thead').addEventListener('change', (e) => { if (e.target.id === 'rowsMaster') setAllRows(e.target.checked); });
+        function setAllRows(on) {
+            excludedRows = new Set(); if (!on) rawCsvParsedRows.forEach((_, i) => excludedRows.add(i));
+            document.querySelectorAll('#rowPickerTable .row-pick').forEach(c => c.checked = on);
+            const m = $('rowsMaster'); if (m) m.checked = on; applyMapping(true);
+        }
+        $('rowsAllBtn').addEventListener('click', () => setAllRows(true));
+        $('rowsNoneBtn').addEventListener('click', () => setAllRows(false));
+        $('applyMappingBtn').addEventListener('click', () => { applyMapping(false); if (rawData.length) $('processBtn').click(); });
+        $('forgetCfgBtn').addEventListener('click', () => { try { localStorage.removeItem(CFG_KEY); } catch (e) {} notify('Se olvidaron las columnas recordadas.'); });
+
+        $('resetAllBtn').addEventListener('click', () => {
+            if (!confirm('¿Borrar los datos cargados y empezar de nuevo?')) return;
+            setSimulated(false); rawData = []; filteredData = []; rawCsvParsedRows = []; csvHeaders = []; activeRows = []; rawIdx = []; rowFlags = []; excludedRows = new Set(); datasets = []; xlsxWb = null;
+            $('csvFile').value = ''; ['fltText', 'fltMin', 'fltMax'].forEach(id => { $(id).value = ''; });
+            $('columnMappingSection').classList.add('hidden'); $('sourcesBox').classList.add('hidden');
+            document.querySelector('#previewTable thead').innerHTML = ''; document.querySelector('#previewTable tbody').innerHTML = '';
+            ['validationBox', 'previewLegend'].forEach(id => { const e = $(id); if (e) e.remove(); });
+            try { localStorage.removeItem(LS_KEY); } catch (e) {}
+            try { cmpRows = null; const cr = $('cmpResult'); if (cr) cr.innerHTML = ''; const cf = $('cmpFile'); if (cf) cf.value = ''; } catch (e) {}
+            notify('Todo limpio. Puedes cargar un archivo nuevo.');
         });
 
-        document.getElementById('applyMappingBtn').addEventListener('click', () => {
-            const nameCol = document.getElementById('mapNameCol').value;
-            const modCol = document.getElementById('mapModCol').value;
-            const asigCol = document.getElementById('mapAsigCol').value;
-            const ejecCol = document.getElementById('mapEjecCol').value;
+        // Modo oscuro (solo pantalla; al imprimir se mantiene el estilo claro)
+        (function () {
+            const btn = $('darkToggle');
+            const apply = (on) => { document.documentElement.classList.toggle('dark', on); btn.textContent = on ? '☀️ Modo claro' : '🌙 Modo oscuro'; try { localStorage.setItem('esap_dark', on ? '1' : '0'); } catch (e) {} };
+            let on = false; try { on = localStorage.getItem('esap_dark') === '1'; } catch (e) {}
+            apply(on); btn.addEventListener('click', () => apply(!document.documentElement.classList.contains('dark')));
+        })();
 
-            rawData = rawCsvParsedRows.map((row, idx) => {
-                let asigVal = parseNum(row[asigCol]);
-                let ejecVal = parseNum(row[ejecCol]);
-                let avanceVal = asigVal > 0 ? Number(((ejecVal / asigVal) * 100).toFixed(1)) : 0;
-                let modVal = row[modCol] ? String(row[modCol]).trim() : MODALIDADES[idx % MODALIDADES.length];
-                return {
-                    nombre_proyecto: row[nameCol] !== undefined ? String(row[nameCol]) : `Proyecto ${idx + 1}`,
-                    modalidad_ejecucion: modVal,
-                    presupuesto_asignado: asigVal,
-                    presupuesto_ejecutado: ejecVal,
-                    porcentaje_avance: avanceVal
-                };
-            });
-            applyFiltersAndRun();
-            displayPreview(rawData);
-            validateCsv(nameCol, asigCol, ejecCol);
-            document.getElementById('columnMappingSection').classList.add('hidden');
-            notify(`¡Mapeo exitoso! Procesados ${rawData.length} registros.`);
-        });
+        // ===== ASISTENTE DE IA (Estadística + Administración Pública) =====
+        const AI_KEY = 'esap_ai_key', AI_MODEL = 'esap_ai_model';
+        let aiHistory = [];
+        const aiNorm = (t) => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const aiF = (v) => (typeof v === 'number' && isFinite(v)) ? v.toLocaleString('es-CO', { maximumFractionDigits: 2 }) : String(v);
+        const aiMd = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^\s*[-•*] /gm, '• ').replace(/\n/g, '<br>');
+        const aiHasKey = () => { try { return !!sessionStorage.getItem(AI_KEY); } catch (e) { return false; } };
+
+        function aiCtx() {
+            const sel = $('targetColumnTab2'), d = filteredData, key = sel.value, n = d.length;
+            const sum = (f) => d.reduce((q, r) => q + (Number(f(r)) || 0), 0), sa = sum(r => r.presupuesto_asignado), se = sum(r => r.presupuesto_ejecutado);
+            const mods = {}; d.forEach(r => { const m = r.modalidad_ejecucion || 'Sin modalidad', o = mods[m] || (mods[m] = { n: 0, asig: 0, ejec: 0, av: 0 }); o.n++; o.asig += Number(r.presupuesto_asignado) || 0; o.ejec += Number(r.presupuesto_ejecutado) || 0; o.av += Number(r.porcentaje_avance) || 0; });
+            const byAv = [...d].sort((a, b) => a.porcentaje_avance - b.porcentaje_avance);
+            const numeric = ['presupuesto_asignado', 'presupuesto_ejecutado', 'porcentaje_avance'].includes(key);
+            let st = null, outl = [];
+            if (numeric && n > 3) { const vals = d.map(r => Number(r[key]) || 0); st = statsOf(vals); const iq = st.q3 - st.q1; outl = d.filter(r => { const v = Number(r[key]) || 0; return v < st.q1 - 1.5 * iq || v > st.q3 + 1.5 * iq; }); }
+            return { muni: selectedMunicipality, varLabel: sel.options[sel.selectedIndex].text, key, numeric, filtro: $('filterCriteria').options[$('filterCriteria').selectedIndex].text, n, sa, se, pct: sa > 0 ? se / sa * 100 : 0, mods, byAv, crit: d.filter(r => r.porcentaje_avance < 50), over: d.filter(r => r.porcentaje_avance > 100), st, outl, stats: lastStats };
+        }
+        function aiCtxText(c) {
+            const m = Object.entries(c.mods).map(([k, o]) => `${k}: ${o.n} proyectos, asignado ${Math.round(o.asig)}, ejecutado ${Math.round(o.ejec)}, ejecución media ${(o.av / o.n).toFixed(1)}%`).join('\n');
+            const row = (r) => `${r.nombre_proyecto} | ${r.modalidad_ejecucion} | asignado ${r.presupuesto_asignado} | ejecutado ${r.presupuesto_ejecutado} | ejecución ${r.porcentaje_avance}%`;
+            return `Municipio: ${c.muni}\nVariable analizada: ${c.varLabel}\nFiltro: ${c.filtro}\nProyectos analizados: ${c.n}\nAsignado total: ${Math.round(c.sa)} COP; Ejecutado total: ${Math.round(c.se)} COP; Ejecución global: ${c.pct.toFixed(1)}%\nMedidas calculadas: ${c.stats.map(r => r.join(': ')).join('; ')}\nProyectos críticos (<50% ejecución): ${c.crit.length}; con ejecución >100%: ${c.over.length}; atípicos en la variable: ${c.outl.length}\nPor modalidad:\n${m}\n10 proyectos con menor avance:\n${c.byAv.slice(0, 10).map(row).join('\n')}\n10 con mayor avance:\n${c.byAv.slice(-10).reverse().map(row).join('\n')}\nAtípicos:\n${c.outl.slice(0, 10).map(row).join('\n')}`;
+        }
+
+        const AI_GLOSS = { 'desviacion|varianza': 'La **desviación estándar** mide cuánto se alejan, en promedio, los datos de la media. Si es pequeña frente a la media, los proyectos son parecidos entre sí; si es grande, hay mucha diferencia entre ellos.', 'coeficiente|variacion': 'El **coeficiente de variación** (desviación ÷ media × 100) permite comparar la dispersión entre variables de distinta escala. Menos de 15% indica datos homogéneos, entre 15% y 30% moderada, y más de 30% alta heterogeneidad.', 'cuartil|rango intercuartil|q1|q3': 'Los **cuartiles** dividen los datos ordenados en cuatro partes: Q1 deja 25% por debajo, Q2 es la mediana (50%) y Q3 deja 75%. El **rango intercuartil** (Q3 − Q1) contiene el 50% central y sirve para detectar atípicos con la regla 1,5×RIC.', 'boxplot|caja|bigote': 'El **diagrama de cajas** muestra Q1, mediana y Q3 en la caja; los bigotes llegan hasta 1,5×RIC y los puntos fuera de ellos son valores atípicos.', 'histograma|frecuencia|intervalo': 'La **tabla de frecuencias** agrupa los datos en intervalos de clase y cuenta cuántos proyectos caen en cada uno; el histograma la dibuja y permite ver la forma de la distribución.' };
+
+        function aiLocal(q, c) {
+            const t = aiNorm(q), has = (...w) => w.some(x => t.includes(x)), g = (k) => (c.stats.find(r => r[0] === k) || [])[1];
+            const row = (r) => `• **${r.nombre_proyecto}** (${r.modalidad_ejecucion}): ejecución ${r.porcentaje_avance}%, ejecutado ${formatCOP(r.presupuesto_ejecutado)} de ${formatCOP(r.presupuesto_asignado)}`;
+            if (!c.n) return 'Aún no hay datos analizados. Carga un archivo, pulsa "Ver Análisis" y vuelve a preguntarme.';
+            if (has('hola', 'ayuda', 'que puedes', 'que sabes', 'buenas')) return 'Soy tu asistente de estadística aplicada a la administración pública. Puedo explicarte las medidas del informe, señalar proyectos críticos o atípicos, comparar modalidades y sugerir acciones de gestión con base en los resultados de **' + c.muni + '**. Prueba con las preguntas sugeridas.';
+            if (!has('modalidad', 'contrat') && has('recomend', 'recomiend', 'que hacer', 'decision', 'gestion', 'politica', 'accion', 'conclus', 'resum', 'informe')) {
+                const r = [`**Lectura general (${c.muni}, ${c.n} proyectos):** se ejecutó ${c.pct.toFixed(1)}% del presupuesto asignado (${formatCOP(c.se)} de ${formatCOP(c.sa)}).`];
+                if (c.pct < 50) r.push('• La ejecución global es baja: conviene un plan de choque y seguimiento mensual por la oficina de planeación, priorizando los proyectos de mayor valor.');
+                else if (c.pct < 80) r.push('• La ejecución es media: revisa cronogramas y cuellos de botella contractuales para cerrar la vigencia sin rezagos.');
+                else r.push('• La ejecución es alta: verifica que el avance físico corresponda al financiero antes de dar el cierre.');
+                if (c.crit.length) r.push(`• Hay **${c.crit.length}** proyecto(s) con ejecución menor a 50%: solicita informes de supervisión e interventoría y define alertas tempranas.`);
+                if (c.over.length) r.push(`• **${c.over.length}** proyecto(s) superan 100% de ejecución: revisa adiciones presupuestales o errores de registro.`);
+                if (c.outl.length) r.push(`• Se detectan **${c.outl.length}** valor(es) atípico(s) en la variable analizada: audítalos antes de decidir con el promedio.`);
+                const top = Object.entries(c.mods).sort((a, b) => b[1].n - a[1].n)[0];
+                if (top && c.n > 0 && top[1].n / c.n > 0.4) r.push(`• La modalidad **${top[0]}** concentra ${(top[1].n / c.n * 100).toFixed(0)}% de los proyectos: revisa que se cumplan los principios de planeación, transparencia y selección objetiva (Ley 80 de 1993 y Ley 1150 de 2007).`);
+                return r.join('\n');
+            }
+            if (has('critico', 'riesgo', 'atrasad', 'bajo avance', 'rezag')) return c.crit.length ? `Hay **${c.crit.length}** proyecto(s) críticos (ejecución < 50%). Los más rezagados:\n` + c.byAv.filter(r => r.porcentaje_avance < 50).slice(0, 5).map(row).join('\n') : 'No hay proyectos con ejecución menor a 50% en el conjunto analizado.';
+            if (has('atipic', 'outlier', 'extremo', 'raro')) return !c.numeric ? 'Los atípicos aplican a variables numéricas. Elige asignado, ejecutado o % de avance arriba y vuelve a preguntar.' : c.outl.length ? `En **${c.varLabel}** hay **${c.outl.length}** valor(es) fuera de los límites 1,5×RIC. Algunos:\n` + c.outl.slice(0, 5).map(row).join('\n') + '\nRevisa si son errores de digitación o casos reales que merecen seguimiento.' : `No hay atípicos en **${c.varLabel}** con la regla 1,5×RIC.`;
+            if (has('modalidad', 'contrat', 'licitacion')) return 'Resumen por modalidad:\n' + Object.entries(c.mods).sort((a, b) => b[1].n - a[1].n).map(([k, o]) => `• **${k}**: ${o.n} proyectos (${(o.n / c.n * 100).toFixed(1)}%), asignado ${formatCOP(o.asig)}, ejecución ${o.asig > 0 ? (o.ejec / o.asig * 100).toFixed(1) : 0}%`).join('\n');
+            if (has('asimetr', 'sesgo', 'simetr', 'forma')) return c.st ? `En **${c.varLabel}** la media es ${aiF(c.st.mean)} y la mediana ${aiF(c.st.median)}: ` + (skewInfo(c.st.mean, c.st.median, c.st.sd).kind === 'sym' ? 'la distribución es aproximadamente simétrica.' : c.st.mean > c.st.median ? 'es asimétrica a la derecha; pocos proyectos grandes elevan el promedio, por eso la mediana representa mejor al proyecto típico.' : 'es asimétrica a la izquierda; pocos valores bajos reducen el promedio.') : 'Elige una variable numérica arriba para evaluar la asimetría.';
+            for (const [k, v] of Object.entries(AI_GLOSS)) if (k.split('|').some(w => t.includes(w)) && has('que es', 'significa', 'explica', 'define', 'como se', 'para que', 'interpreta') || (k.split('|').some(w => t.includes(w)) && !c.st)) return v;
+            if (has('media', 'promedio', 'mediana', 'tendencia', 'tipico')) return c.st ? `En **${c.varLabel}** (${c.muni}): media ${aiF(c.st.mean)}, mediana ${aiF(c.st.median)}, Q1 ${aiF(c.st.q1)} y Q3 ${aiF(c.st.q3)}. La mediana es el valor central y no se distorsiona con extremos; si difiere mucho de la media, hay valores muy altos o bajos que conviene revisar.` : 'La media y la mediana aplican a variables numéricas; elige una arriba. Para variables cualitativas el indicador de tendencia central es la **moda**: ' + (g('Moda') || 'ver tabla de frecuencias') + '.';
+            if (has('moda', 'predomin', 'frecuente')) return g('Moda') ? `La moda de **${c.varLabel}** es **${g('Moda')}**, con frecuencia ${g('Frecuencia de la moda')}.` : 'La moda aplica sobre todo a variables cualitativas; elige modalidad de ejecución para verla.';
+            if (has('dispers', 'varia', 'desviacion', 'homogene')) return c.st ? `La desviación estándar de **${c.varLabel}** es ${aiF(c.st.sd)} y el coeficiente de variación ${c.st.cv.toFixed(1)}%: dispersión ${c.st.cv < 15 ? 'baja (proyectos homogéneos)' : c.st.cv < 30 ? 'moderada' : 'alta (proyectos muy distintos entre sí)'}.` : 'Elige una variable numérica arriba para medir la dispersión.';
+            if (has('ejecucion', 'presupuesto', 'total', 'cuanto', 'asignado', 'ejecutado', 'plata', 'dinero')) return `En **${c.muni}** (${c.filtro.toLowerCase()}): asignado **${formatCOP(c.sa)}**, ejecutado **${formatCOP(c.se)}**, ejecución global **${c.pct.toFixed(1)}%**; ${c.n} proyectos.`;
+            return 'No estoy seguro de haber entendido. Puedo ayudarte con: significado de las medidas (media, mediana, desviación, cuartiles), proyectos críticos, atípicos, modalidades, presupuesto total y recomendaciones de gestión. Si activas "⚙️ IA avanzada" puedo responder preguntas abiertas con un modelo de lenguaje.';
+        }
+        async function aiRemote(q, c) {
+            const key = sessionStorage.getItem(AI_KEY), model = localStorage.getItem(AI_MODEL) || 'claude-sonnet-5-5';
+            const system = 'Eres un asistente experto en estadística descriptiva y administración pública territorial colombiana. Respondes en español, claro y breve, a preguntas sobre los resultados de un simulador estadístico de proyectos de inversión pública. Usa SOLO las cifras del contexto; si algo no está en el contexto, dilo. Explica los conceptos estadísticos de forma sencilla y da recomendaciones de gestión pública prudentes, sin inventar normas.\n\nCONTEXTO DEL INFORME:\n' + aiCtxText(c);
+            const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+                body: JSON.stringify({ model, max_tokens: 1000, system, messages: [...aiHistory.slice(-8), { role: 'user', content: q }] }) });
+            const j = await r.json(); if (!r.ok) throw new Error((j.error && j.error.message) || r.status);
+            return j.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+        }
+        function aiAdd(role, html) {
+            const chat = $('aiChat'), u = role === 'user', el = document.createElement('div');
+            el.className = 'flex gap-2 ' + (u ? 'justify-end' : '');
+            el.innerHTML = (u ? '' : '<div class="w-7 h-7 shrink-0 rounded-full bg-esap text-white flex items-center justify-center text-sm">🤖</div>') + `<div class="${u ? 'ai-user' : 'ai-bot'} rounded-[12px] p-3 text-sm max-w-[85%]">${html}</div>`;
+            chat.appendChild(el); chat.scrollTop = chat.scrollHeight; return el;
+        }
+        async function aiAsk(q) {
+            q = q.trim(); if (!q) return; $('aiInput').value = ''; aiAdd('user', esc(q));
+            const wait = aiAdd('bot', '<span class="animate-pulse text-gray-600">Analizando los resultados…</span>'), c = aiCtx(); let ans, remote = false;
+            if (aiHasKey() && c.n) { try { ans = await aiRemote(q, c); remote = true; } catch (e) { ans = aiLocal(q, c) + '\n\n_(No pude usar la IA avanzada: ' + String(e.message).slice(0, 120) + '. Respondí con el modo local.)_'; } }
+            else { await new Promise(r => setTimeout(r, 350)); ans = aiLocal(q, c); }
+            wait.querySelector('div:last-child').innerHTML = aiMd(ans); $('aiChat').scrollTop = $('aiChat').scrollHeight;
+            aiHistory.push({ role: 'user', content: q }, { role: 'assistant', content: ans });
+        }
+        function aiRefreshMode() {
+            $('aiModeLabel').textContent = aiHasKey() ? 'Modo IA avanzada (Claude) activo · responde con el contexto de tus resultados' : 'Modo local: responde con reglas sobre los resultados calculados, sin conexión';
+            $('aiChips').innerHTML = ['¿Qué significan la media y la mediana?', '¿Qué tan dispersos están los datos?', '¿Hay valores atípicos?', '¿Qué proyectos están críticos?', 'Resumen por modalidad', '¿Qué recomiendas hacer?'].map(t => `<button type="button" class="ai-chip text-xs bg-blue-50 text-esap border border-blue-200 rounded-full px-3 py-1 hover:bg-blue-100">${t}</button>`).join('');
+        }
+        $('aiSend').addEventListener('click', () => aiAsk($('aiInput').value));
+        $('aiInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') aiAsk(e.target.value); });
+        $('aiChips').addEventListener('click', (e) => { if (e.target.classList.contains('ai-chip')) aiAsk(e.target.textContent); });
+        $('aiClearBtn').addEventListener('click', () => { const ch = $('aiChat'); while (ch.children.length > 1) ch.lastChild.remove(); aiHistory = []; });
+        $('aiSettingsBtn').addEventListener('click', () => $('aiSettings').classList.toggle('hidden'));
+        $('aiKeySave').addEventListener('click', () => { const k = $('aiKey').value.trim(); if (!k) return; try { sessionStorage.setItem(AI_KEY, k); localStorage.setItem(AI_MODEL, $('aiModel').value.trim() || 'claude-sonnet-5-5'); } catch (e) {} $('aiKey').value = ''; aiRefreshMode(); notify('IA avanzada activada.'); });
+        $('aiKeyDel').addEventListener('click', () => { try { sessionStorage.removeItem(AI_KEY); } catch (e) {} aiRefreshMode(); notify('Clave eliminada: vuelve el modo local.'); });
+        aiRefreshMode();
 
         document.getElementById('processBtn').addEventListener('click', () => {
             if (rawData.length === 0) { notify("Cargue un archivo CSV, use datos automáticos o digite datos manualmente."); return; }
@@ -673,12 +1122,12 @@
                     <th class="px-3 py-2">Modalidad de Ejecución</th>
                     <th class="px-3 py-2">Asignado</th>
                     <th class="px-3 py-2">Ejecutado</th>
-                    <th class="px-3 py-2">Avance (%)</th>
+                    <th class="px-3 py-2">Ejecución (%)</th>
                 </tr>`;
             document.querySelector('#previewTable tbody').innerHTML = data.slice(0, 50).map(r => 
                 `<tr>
                     <td class="px-3 py-2 font-medium">${esc(r.nombre_proyecto)}</td>
-                    <td class="px-3 py-2"><span class="bg-blue-100 text-esap text-[11px] px-2 py-0.5 rounded-[6px] font-semibold">${esc(r.modalidad_ejecucion || 'N/A')}</span></td>
+                    <td class="px-3 py-2"><span class="bg-blue-100 text-esap text-xs px-2 py-0.5 rounded-[6px] font-semibold">${esc(r.modalidad_ejecucion || 'N/A')}</span></td>
                     <td class="px-3 py-2">${formatCOP(r.presupuesto_asignado)}</td>
                     <td class="px-3 py-2">${formatCOP(r.presupuesto_ejecutado)}</td>
                     <td class="px-3 py-2 font-bold">${r.porcentaje_avance}%</td>
@@ -747,6 +1196,7 @@
             // Hoja 1: Resumen + medidas descriptivas
             const ws1 = wb.addWorksheet('Resumen'); ws1.columns = [{ width: 42 }, { width: 32 }];
             ws1.addRow([`Reporte Estadístico ESAP - ${selectedMunicipality}`]).font = { bold: true, size: 14 };
+            if (isSimulated) ws1.addRow(['⚠ DATOS SIMULADOS: generados al azar, no corresponden a información real.']).font = { bold: true, color: { argb: 'FFB45309' } };
             ws1.addRow([]);
             styleHead(ws1.addRow(['Métrica', 'Valor']));
             ws1.addRow(['Registros cargados', rawData.length]);
@@ -815,7 +1265,7 @@
 
             const startIndex = (currentFreqPage - 1) * itemsPerPage;
             const endIndex = Math.min(startIndex + itemsPerPage, totalRows);
-            freqTableRowsCache.slice(startIndex, endIndex).forEach(rowHtml => { freqTableBody.innerHTML += rowHtml; });
+            freqTableBody.innerHTML = freqTableRowsCache.slice(startIndex, endIndex).join('');
 
             document.getElementById('paginationInfo').innerText = `Mostrando ítems ${startIndex + 1} a ${endIndex} de ${totalRows}`;
             document.getElementById('pageIndicator').innerText = `Página ${currentFreqPage} de ${totalPages}`;
@@ -850,29 +1300,29 @@
             let criticalPercentage = ((criticalCount / nTotal) * 100).toFixed(1);
 
             kpiGrid.innerHTML = `
-                <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-esap">
-                    <p class="text-xs text-gray-500">Presupuesto Asignado Global</p>
+                <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-esap">
+                    <p class="text-xs text-gray-600">Presupuesto Asignado Global</p>
                     <p class="text-md font-bold text-esap mt-1">${formatCOP(totalAsig)}</p>
                 </div>
-                <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-emerald-600 relative group cursor-pointer">
-                    <p class="text-xs text-gray-500">Presupuesto Ejecutado Global</p>
+                <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-emerald-600 relative group cursor-pointer">
+                    <p class="text-xs text-gray-600">Presupuesto Ejecutado Global</p>
                     <p class="text-md font-bold text-emerald-700 mt-1">${formatCOP(totalEjec)}</p>
                     <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                         <p class="font-bold text-amber-300">💡 Brecha Financiera</p>
                         <p class="mt-1">${totalEjec <= totalAsig ? `Falta ejecutar <strong>${brechaFaltante}%</strong> (${formatCOP(totalAsig - totalEjec)}) del presupuesto asignado.` : `Se ejecutó <strong>${formatCOP(totalEjec - totalAsig)}</strong> por encima de lo asignado (sobreejecución).`}</p>
                     </div>
                 </div>
-                <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-amber-500 relative group cursor-pointer">
-                    <p class="text-xs text-gray-500">% Ejecución Financiera</p>
+                <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-amber-500 relative group cursor-pointer">
+                    <p class="text-xs text-gray-600">% Ejecución Financiera</p>
                     <p class="text-xl font-bold text-amber-600 mt-1">${globalExecution}%</p>
                     <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                         <p class="font-bold text-amber-300">🎯 Indicador de Meta</p>
                         <p class="mt-1">Se ha ejecutado el <strong>${globalExecution}%</strong> de lo asignado; ${Number(brechaFaltante) > 0 ? `faltan <strong>${brechaFaltante}</strong> puntos para la meta del 100%.` : 'la meta del 100% fue alcanzada.'}</p>
                     </div>
                 </div>
-                <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-red-500 relative group cursor-pointer">
-                    <p class="text-xs text-gray-500">Proyectos Críticos (&lt;50%)</p>
-                    <p class="text-xl font-bold text-red-600 mt-1">${criticalCount} <span class="text-xs text-gray-500 font-normal">(${criticalPercentage}%)</span></p>
+                <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-red-500 relative group cursor-pointer">
+                    <p class="text-xs text-gray-600">Proyectos Críticos (&lt;50%)</p>
+                    <p class="text-xl font-bold text-red-600 mt-1">${criticalCount} <span class="text-xs text-gray-600 font-normal">(${criticalPercentage}%)</span></p>
                     <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                         <p class="font-bold text-red-300">⚠️ Estado de Alerta</p>
                         <p class="mt-1"><strong>${criticalCount}</strong> de ${nTotal} proyectos (${criticalPercentage}%) tienen ejecución inferior al 50% y requieren seguimiento prioritario.</p>
@@ -892,7 +1342,7 @@
                 // Conteo de frecuencias por categoría
                 let counts = {};
                 filteredData.forEach(row => {
-                    let val = row[targetCol] ? String(row[targetCol]).trim() : 'Sin Especificar';
+                    let val = row[targetCol] ? String(row[targetCol]).trim() : 'Sin especificar';
                     counts[val] = (counts[val] || 0) + 1;
                 });
 
@@ -935,28 +1385,28 @@
 
                 // Tarjetas Cualitativas
                 cardsGrid.innerHTML = `
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] relative group cursor-pointer border-l-4 border-l-esap">
-                        <p class="text-xs text-gray-500">Moda (Categoría Predominante)</p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] relative group cursor-pointer border-l-4 border-l-esap">
+                        <p class="text-xs text-gray-600">Moda (Categoría Predominante)</p>
                         <p class="text-md font-bold text-esap mt-1">${esc(moda)}</p>
                         <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                             <p class="font-bold text-amber-300">📌 Moda Estadística</p>
                             <p class="mt-1">Categoría de <em>${varLabel}</em> con mayor frecuencia${modes.length > 1 ? '. Hay empate, por eso la variable es multimodal' : ''}.</p>
                         </div>
                     </div>
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] relative group cursor-pointer border-l-4 border-l-amber-500">
-                        <p class="text-xs text-gray-500">Frecuencia de la Moda</p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] relative group cursor-pointer border-l-4 border-l-amber-500">
+                        <p class="text-xs text-gray-600">Frecuencia de la Moda</p>
                         <p class="text-md font-bold text-amber-600 mt-1">${maxFreq} proyectos (${modaPorcentaje}%)</p>
                         <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                             <p class="font-bold text-amber-300">📊 Proporción de la Moda</p>
                             <p class="mt-1">Equivale al ${modaPorcentaje}% de las ${nTotal} observaciones analizadas.</p>
                         </div>
                     </div>
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-blue-500">
-                        <p class="text-xs text-gray-500">Categorías Distintas</p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-blue-500">
+                        <p class="text-xs text-gray-600">Categorías Distintas</p>
                         <p class="text-xl font-bold text-blue-700 mt-1">${sortedCategories.length}</p>
                     </div>
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-emerald-500">
-                        <p class="text-xs text-gray-500">Total Observaciones (n)</p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-emerald-500">
+                        <p class="text-xs text-gray-600">Total Observaciones (n)</p>
                         <p class="text-xl font-bold text-emerald-700 mt-1">${nTotal}</p>
                     </div>
                 `;
@@ -996,11 +1446,9 @@
                 const c = range / (k || 1);
 
                 let intervals = [];
-                let lower = min;
                 for (let i = 0; i < k; i++) {
-                    let upper = lower + c;
+                    const lower = min + i * c, upper = (i === k - 1) ? max : min + (i + 1) * c;
                     intervals.push({ lower, upper, freq: 0, mark: (lower + upper) / 2 });
-                    lower = upper;
                 }
 
                 numValues.forEach(val => {
@@ -1010,33 +1458,17 @@
                     }
                 });
 
-                const sum = numValues.reduce((a, b) => a + b, 0);
-                const mean = sum / n;
-                const variance = numValues.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (n - 1 || 1);
-                const stdDev = Math.sqrt(variance);
-                const coefVar = mean > 0 ? (stdDev / mean) * 100 : 0;
-
-                const getPercentile = (p) => {
-                    let index = (p / 100) * (n - 1);
-                    let lowerIndex = Math.floor(index);
-                    let upperIndex = Math.ceil(index);
-                    if (lowerIndex === upperIndex) return numValues[lowerIndex];
-                    return numValues[lowerIndex] + (numValues[upperIndex] - numValues[lowerIndex]) * (index - lowerIndex);
-                };
-
-                const q1 = getPercentile(25);
-                const median = getPercentile(50);
-                const q3 = getPercentile(75);
+                const S = statsOf(numValues), sum = numValues.reduce((a, b) => a + b, 0), mean = S.mean, stdDev = S.sd, variance = stdDev * stdDev, coefVar = S.cv, q1 = S.q1, median = S.median, q3 = S.q3;
 
                 const isCurrency = targetCol.includes('presupuesto');
                 const isPct = targetCol === 'porcentaje_avance';
                 const fmt = (v) => isCurrency ? formatCOP(v) : (v.toLocaleString('es-CO', {maximumFractionDigits: 2}) + (isPct ? '%' : ''));
-                lastStats = [['Variable', varLabel], ['Observaciones (n)', n], ['Mínimo', fmt(min)], ['Q1', fmt(q1)], ['Mediana', fmt(median)], ['Q3', fmt(q3)], ['Máximo', fmt(max)], ['Media', fmt(mean)], ['Desviación estándar', fmt(stdDev)], ['Coef. de variación', coefVar.toFixed(2) + '%']];
+                lastStats = [['Variable', varLabel], ['Observaciones (n)', n], ['Mínimo', fmt(min)], ['Q1', fmt(q1)], ['Mediana', fmt(median)], ['Q3', fmt(q3)], ['Máximo', fmt(max)], ['Media', fmt(mean)], ['Desviación estándar (muestral, n−1)', fmt(stdDev)], ['Coef. de variación', coefVar.toFixed(2) + '%']];
                 setInterp(buildInterp({ varLabel, n, min, max, mean, median, stdDev, q1, q3, fmt }, numValues));
 
                 cardsGrid.innerHTML = `
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-esap relative group cursor-pointer">
-                        <p class="text-xs text-gray-500">Media (Promedio)</p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-esap relative group cursor-pointer">
+                        <p class="text-xs text-gray-600">Media (Promedio)</p>
                         <p class="text-md font-bold text-esap mt-1">${fmt(mean)}</p>
                         <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                             <p class="font-bold text-amber-300">📐 Tendencia Central</p>
@@ -1044,8 +1476,8 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-esap relative group cursor-pointer">
-                        <p class="text-xs text-gray-500">Mediana </p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-esap relative group cursor-pointer">
+                        <p class="text-xs text-gray-600">Mediana </p>
                         <p class="text-md font-bold text-esap mt-1">${fmt(median)}</p>
                         <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                             <p class="font-bold text-amber-300">🎯 Punto Medio</p>
@@ -1053,8 +1485,8 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-blue-600 relative group cursor-pointer">
-                        <p class="text-xs text-gray-500">Primer Cuartil</p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-blue-600 relative group cursor-pointer">
+                        <p class="text-xs text-gray-600">Primer Cuartil</p>
                         <p class="text-md font-bold text-blue-700 mt-1">${fmt(q1)}</p>
                         <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                             <p class="font-bold text-blue-300">📊 Posición Cuartil</p>
@@ -1062,8 +1494,8 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-blue-600 relative group cursor-pointer">
-                        <p class="text-xs text-gray-500">Tercer Cuartil </p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-blue-600 relative group cursor-pointer">
+                        <p class="text-xs text-gray-600">Tercer Cuartil </p>
                         <p class="text-md font-bold text-blue-700 mt-1">${fmt(q3)}</p>
                         <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                             <p class="font-bold text-blue-300">📊 Posición Cuartil</p>
@@ -1071,8 +1503,8 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-amber-500 relative group cursor-pointer">
-                        <p class="text-xs text-gray-500">Desviación Estándar</p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-amber-500 relative group cursor-pointer">
+                        <p class="text-xs text-gray-600">Desviación Estándar</p>
                         <p class="text-md font-bold text-amber-600 mt-1">${fmt(stdDev)}</p>
                         <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                             <p class="font-bold text-amber-300">📏 Medida de Dispersión</p>
@@ -1080,8 +1512,8 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-amber-500 relative group cursor-pointer">
-                        <p class="text-xs text-gray-500">Coef. de Variación (CV)</p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-amber-500 relative group cursor-pointer">
+                        <p class="text-xs text-gray-600">Coef. de Variación (CV)</p>
                         <p class="text-md font-bold text-amber-600 mt-1">${coefVar.toFixed(2)}%</p>
                         <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                             <p class="font-bold text-amber-300">📈 Variabilidad Relativa</p>
@@ -1089,8 +1521,8 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-emerald-600 relative group cursor-pointer">
-                        <p class="text-xs text-gray-500">Mínimo / Máximo</p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-emerald-600 relative group cursor-pointer">
+                        <p class="text-xs text-gray-600">Mínimo / Máximo</p>
                         <p class="text-xs font-bold text-emerald-700 mt-1">${fmt(min)}<br>${fmt(max)}</p>
                         <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                             <p class="font-bold text-emerald-300">↔️ Rango Extremo</p>
@@ -1098,8 +1530,8 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-4 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_2px_rgba(0,0,0,0.1)] border border-[#dfe3e8] border-l-4 border-l-emerald-600">
-                        <p class="text-xs text-gray-500">Total Elementos</p>
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-emerald-600">
+                        <p class="text-xs text-gray-600">Total Elementos</p>
                         <p class="text-lg font-bold text-emerald-700 mt-1">${n}</p>
                     </div>
                 `;
@@ -1134,7 +1566,7 @@
                 const iqr = q3 - q1;
                 const outliers = numValues.filter(v => v < q1 - 1.5 * iqr || v > q3 + 1.5 * iqr).length;
                 const cvTxt = coefVar < 15 ? 'baja (datos homogéneos)' : coefVar < 30 ? 'moderada' : 'alta (datos muy heterogéneos)';
-                const sesgo = Math.abs(mean - median) <= 0.05 * Math.abs(median || 1) ? 'aproximadamente simétrica' : (mean > median ? 'sesgada a la derecha (pocos valores altos elevan el promedio)' : 'sesgada a la izquierda (pocos valores bajos reducen el promedio)');
+                const sesgo = SKEW_TXT[skewInfo(mean, median, stdDev).kind];
                 document.getElementById('conclusionsText').innerHTML = `
                     <p><strong>1. Tendencia central:</strong> en ${selectedMunicipality}, <em>${varLabel.toLowerCase()}</em> tiene media de <strong>${fmt(mean)}</strong> y mediana de <strong>${fmt(median)}</strong>; la distribución es ${sesgo}. El 50% central de los proyectos se ubica entre <strong>${fmt(q1)}</strong> (Q<sub>1</sub>) y <strong>${fmt(q3)}</strong> (Q<sub>3</sub>).</p>
                     <p><strong>2. Dispersión:</strong> desviación estándar de <strong>${fmt(stdDev)}</strong> y coeficiente de variación de <strong>${coefVar.toFixed(2)}%</strong>: variabilidad ${cvTxt}.</p>
@@ -1285,7 +1717,7 @@
         function buildInterp(x, vals) {
             const iqr = x.q3 - x.q1, lo = x.q1 - 1.5 * iqr, hi = x.q3 + 1.5 * iqr;
             const out = vals.filter(v => v < lo || v > hi).length;
-            const sk = x.stdDev > 0 ? (x.mean - x.median) / x.stdDev : 0;
+            const sk = skewInfo(x.mean, x.median, x.stdDev).sk;
             const asim = Math.abs(sk) < 0.1 ? 'es aproximadamente simétrica (media y mediana son similares)' : sk > 0 ? 'es asimétrica a la derecha: la media supera a la mediana por efecto de valores altos' : 'es asimétrica a la izquierda: la media es menor que la mediana por efecto de valores bajos';
             const cv = x.mean !== 0 ? Math.abs(x.stdDev / x.mean) * 100 : 0;
             const disp = cv < 15 ? 'baja (datos homogéneos)' : cv < 30 ? 'moderada' : 'alta (datos muy dispersos)';
@@ -1304,7 +1736,7 @@
         }
 
         function validateCsv(nameCol, asigCol, ejecCol) {
-            const rows = rawCsvParsedRows, issues = [];
+            const rows = activeRows, issues = [];
             const empty = (v) => v === null || v === undefined || String(v).trim() === '';
             const badNum = (c) => rows.filter(r => empty(r[c]) || !/\d/.test(String(r[c]))).length;
             const noName = rows.filter(r => empty(r[nameCol])).length, bA = badNum(asigCol), bE = badNum(ejecCol);
@@ -1316,7 +1748,7 @@
             if (bA) issues.push(`${bA} valor(es) vacíos o no numéricos en "${esc(asigCol)}" (se tomaron como 0)`);
             if (bE) issues.push(`${bE} valor(es) vacíos o no numéricos en "${esc(ejecCol)}" (se tomaron como 0)`);
             if (neg) issues.push(`${neg} fila(s) con valores negativos`);
-            if (over) issues.push(`${over} proyecto(s) con ejecutado mayor al asignado (avance superior a 100%)`);
+            if (over) issues.push(`${over} proyecto(s) con ejecutado mayor al asignado (ejecución superior a 100%)`);
             if (dups) issues.push(`${dups} nombre(s) de proyecto repetido(s)`);
             let box = document.getElementById('validationBox');
             if (!box) { box = document.createElement('div'); box.id = 'validationBox'; document.querySelector('#previewSection h3').after(box); }
@@ -1325,14 +1757,15 @@
         }
 
         const LS_KEY = 'esap_stats_v1';
-        function saveState() { try { localStorage.setItem(LS_KEY, JSON.stringify({ rawData, municipality: selectedMunicipality })); } catch (e) {} }
+        function saveState() { try { localStorage.setItem(LS_KEY, JSON.stringify({ rawData, municipality: selectedMunicipality, simulated: isSimulated })); } catch (e) {} }
         function restoreState() {
             try {
                 const st = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
                 if (!st || !Array.isArray(st.rawData) || !st.rawData.length) return;
                 rawData = st.rawData; filteredData = [...rawData];
                 const sel = document.getElementById('municipalitySelect');
-                if (st.municipality && [...sel.options].some(o => o.value === st.municipality)) { sel.value = st.municipality; selectedMunicipality = st.municipality; }
+                if (st.municipality) { if ([...sel.options].some(o => o.value === st.municipality)) sel.value = st.municipality; else { sel.value = '__otro'; const mc = document.getElementById('municipalityCustom'); mc.value = st.municipality; mc.classList.remove('hidden'); } selectedMunicipality = st.municipality; updateContext(); }
+                setSimulated(!!st.simulated);
                 displayPreview(rawData);
                 notify(`Se restauraron ${rawData.length} registros guardados.`);
             } catch (e) {}
@@ -1352,7 +1785,7 @@
         }
         [['histogramChart', 'histograma'], ['secondaryChart', 'grafico_secundario'], ['boxplotChart', 'boxplot']].forEach(([id, name]) => {
             const cv = document.getElementById(id), host = cv.parentElement, b = document.createElement('button');
-            b.textContent = '⬇ Descargar PNG'; b.className = 'no-print block mx-auto mb-2 text-[11px] text-esap border border-[#dfe3e8] rounded-[6px] px-2 py-0.5 hover:bg-gray-50';
+            b.textContent = '⬇ Descargar PNG'; b.className = 'no-print block mx-auto mb-2 text-xs text-esap border border-[#dfe3e8] rounded-[6px] px-2 py-0.5 hover:bg-gray-50';
             b.onclick = () => downloadCanvasPNG(cv, name); host.parentElement.insertBefore(b, host);
         });
 
@@ -1376,7 +1809,7 @@
             const items = [['Registros', 'n'], ['Mínimo', 'min'], ['Q1', 'q1'], ['Mediana', 'median'], ['Media', 'mean'], ['Q3', 'q3'], ['Máximo', 'max'], ['Desv. estándar', 'sd'], ['Coef. de variación', 'cv']];
             const cell = (k, v) => k === 'n' ? v : k === 'cv' ? v.toFixed(1) + '%' : f(v);
             const diff = (k) => k === 'n' || !A[k] ? '—' : ((B[k] - A[k]) / Math.abs(A[k]) * 100).toFixed(1) + '%';
-            box.innerHTML = `<p class="text-xs text-gray-500 mb-2">Variable: <b>${esc(col)}</b></p>
+            box.innerHTML = `<p class="text-xs text-gray-600 mb-2">Variable: <b>${esc(col)}</b></p>
                 <table class="min-w-full text-xs text-left border"><thead class="bg-[#002D62] text-white"><tr><th class="px-3 py-2">Medida</th><th class="px-3 py-2">${esc(nameA)}</th><th class="px-3 py-2">${esc(nameB)}</th><th class="px-3 py-2">Diferencia (B vs A)</th></tr></thead><tbody>` +
                 items.map(([l, k]) => `<tr class="border-t"><td class="px-3 py-1.5 font-medium">${l}</td><td class="px-3 py-1.5">${cell(k, A[k])}</td><td class="px-3 py-1.5">${cell(k, B[k])}</td><td class="px-3 py-1.5">${diff(k)}</td></tr>`).join('') +
                 `</tbody></table><div class="relative h-64 mt-4"><canvas id="cmpCanvas"></canvas></div>`;
@@ -1402,6 +1835,12 @@
         });
         document.getElementById('cmpName').addEventListener('input', renderCompare);
         document.getElementById('targetColumnTab2').addEventListener('change', renderCompare);
+
+        $('excludeErr').addEventListener('change', () => applyMapping(true));
+        document.querySelectorAll('label:not([for])').forEach(l => { if (l.querySelector('input,select,textarea')) return; const f = l.parentElement.querySelector('input,select,textarea'); if (f && f.id) l.htmlFor = f.id; });
+        const fixTips = () => document.querySelectorAll('.group:not([tabindex])').forEach(e => { e.tabIndex = 0; e.classList.remove('cursor-pointer'); e.classList.add('cursor-help'); });
+        new MutationObserver(fixTips).observe(document.body, { childList: true, subtree: true }); fixTips();
+        document.getElementById('footDate').textContent = new Date().toLocaleDateString('es-CO', { dateStyle: 'long' });
 
         restoreState();
     </script>
