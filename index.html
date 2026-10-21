@@ -484,7 +484,7 @@
                 </div>
                 <div id="aiSettings" class="hidden no-print bg-amber-50 border border-amber-300 rounded-[6px] p-3 text-xs text-amber-900 space-y-2">
                     <p><b>Modo IA avanzada (opcional).</b> Si pegas una clave de API de Gemini, las preguntas se envían a Gemini con los resultados del simulador como contexto.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2"><input id="aiKey" type="password" autocomplete="off" placeholder="Clave de API (AIza…)" class="md:col-span-2 rounded-[6px] border p-2 text-xs bg-white"><input id="aiModel" type="text" value="gemini-2.5-flash" class="rounded-[6px] border p-2 text-xs bg-white"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2"><input id="aiKey" type="password" autocomplete="off" placeholder="Clave de API (AIza…)" class="md:col-span-2 rounded-[6px] border p-2 text-xs bg-white"><input id="aiModel" type="text" value="gemini-3.8-flash" class="rounded-[6px] border p-2 text-xs bg-white"></div>
                     <div class="flex flex-wrap gap-2 items-center"><button id="aiKeySave" type="button" class="bg-esap text-white px-3 py-1 rounded-[6px]">Guardar y activar</button><button id="aiKeyDel" type="button" class="bg-white border px-3 py-1 rounded-[6px]">Quitar clave</button></div>
                     <p>⚠️ La clave se guarda solo mientras esta pestaña esté abierta y los datos de tus proyectos (nombres y presupuestos) se envían a la API de Gemini. Úsalo solo en tu computador personal y con datos que puedas compartir; el uso de la API tiene costo.</p>
                 </div>
@@ -1073,7 +1073,7 @@
             return 'No estoy seguro de haber entendido. Puedo ayudarte con: significado de las medidas (media, mediana, desviación, cuartiles), proyectos críticos, atípicos, modalidades, presupuesto total y recomendaciones de gestión. Si activas "⚙️ IA avanzada" puedo responder preguntas abiertas con un modelo de lenguaje.';
         }
         async function aiRemote(q, c) {
-            let model = localStorage.getItem(AI_MODEL) || 'gemini-2.5-flash'; if (/^claude/i.test(model)) model = 'gemini-2.5-flash';
+            let model = localStorage.getItem(AI_MODEL) || 'gemini-3.8-flash'; if (/^claude/i.test(model)) model = 'gemini-3.8-flash'; if (/^gemini-\d+(\.\d+)?$/i.test(model)) model += '-flash';
             const key = sessionStorage.getItem(AI_KEY);
             const system = 'Eres un asistente experto en estadística descriptiva y administración pública territorial colombiana. Respondes en español, claro y breve, a preguntas sobre los resultados de un simulador estadístico de proyectos de inversión pública. Usa SOLO las cifras del contexto; si algo no está en el contexto, dilo. Explica los conceptos estadísticos de forma sencilla y da recomendaciones de gestión pública prudentes, sin inventar normas.\n\nCONTEXTO DEL INFORME:\n' + aiCtxText(c);
             const contents = [...aiHistory.slice(-8), { role: 'user', content: q }].map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
@@ -1107,8 +1107,9 @@
         $('aiChips').addEventListener('click', (e) => { if (e.target.classList.contains('ai-chip')) aiAsk(e.target.textContent); });
         $('aiClearBtn').addEventListener('click', () => { const ch = $('aiChat'); while (ch.children.length > 1) ch.lastChild.remove(); aiHistory = []; });
         $('aiSettingsBtn').addEventListener('click', () => $('aiSettings').classList.toggle('hidden'));
-        $('aiKeySave').addEventListener('click', () => { const k = $('aiKey').value.trim(); if (!k) return; try { sessionStorage.setItem(AI_KEY, k); localStorage.setItem(AI_MODEL, $('aiModel').value.trim() || 'gemini-2.5-flash'); } catch (e) {} $('aiKey').value = ''; aiRefreshMode(); notify('IA avanzada activada.'); });
+        $('aiKeySave').addEventListener('click', () => { const k = $('aiKey').value.trim(); if (!k && !aiHasKey()) return; try { if (k) sessionStorage.setItem(AI_KEY, k); localStorage.setItem(AI_MODEL, $('aiModel').value.trim() || 'gemini-3.8-flash'); } catch (e) {} $('aiKey').value = ''; aiRefreshMode(); notify('IA avanzada activada.'); });
         $('aiKeyDel').addEventListener('click', () => { try { sessionStorage.removeItem(AI_KEY); } catch (e) {} aiRefreshMode(); notify('Clave eliminada: vuelve el modo local.'); });
+        try { const sm = localStorage.getItem(AI_MODEL); if (sm) $('aiModel').value = sm; } catch (e) {}
         aiRefreshMode();
 
         document.getElementById('processBtn').addEventListener('click', () => {
