@@ -463,6 +463,13 @@
                         </div>
                         <p class="text-xs text-gray-600 text-center mt-3 leading-snug">Caja: Q<sub>1</sub>–Q<sub>3</sub> · Línea: mediana · Punto dorado: media · Bigotes: límite 1,5×RIC · Puntos rojos: atípicos.<br>Pasa el cursor para ver Mín, Q1, Mediana, Q3 y Máx.</p>
                     </div>
+                    <div class="bg-white card-surface p-[24px] border border-[#dfe3e8]" id="ojivaCard">
+                        <h4 id="chart4Title" class="font-semibold text-gray-700 mb-4 text-center text-sm">Ojiva (Frecuencia Acumulada)</h4>
+                        <div class="relative h-64">
+                            <canvas id="ojivaChart"></canvas>
+                        </div>
+                        <p class="text-xs text-gray-600 text-center mt-3 leading-snug">Frecuencia acumulada «menor que» en el límite superior de cada intervalo.<br>Eje izquierdo: proyectos acumulados · Eje derecho: % acumulado.</p>
+                    </div>
                 </div>
             </section>
 
@@ -476,10 +483,10 @@
                     <div class="flex gap-2 no-print"><button id="aiSettingsBtn" type="button" class="text-xs bg-white border border-[#dfe3e8] rounded-[6px] px-2 py-1 hover:bg-gray-50">⚙️ IA avanzada</button><button id="aiClearBtn" type="button" class="text-xs bg-white border border-[#dfe3e8] rounded-[6px] px-2 py-1 hover:bg-gray-50">Limpiar chat</button></div>
                 </div>
                 <div id="aiSettings" class="hidden no-print bg-amber-50 border border-amber-300 rounded-[6px] p-3 text-xs text-amber-900 space-y-2">
-                    <p><b>Modo IA avanzada (opcional).</b> Si pegas una clave de API de Anthropic, las preguntas se envían a Claude con los resultados del simulador como contexto.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2"><input id="aiKey" type="password" autocomplete="off" placeholder="Clave de API (sk-ant-…)" class="md:col-span-2 rounded-[6px] border p-2 text-xs bg-white"><input id="aiModel" type="text" value="claude-sonnet-5-5" class="rounded-[6px] border p-2 text-xs bg-white"></div>
+                    <p><b>Modo IA avanzada (opcional).</b> Si pegas una clave de API de Gemini, las preguntas se envían a Gemini con los resultados del simulador como contexto.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2"><input id="aiKey" type="password" autocomplete="off" placeholder="Clave de API (AIza…)" class="md:col-span-2 rounded-[6px] border p-2 text-xs bg-white"><input id="aiModel" type="text" value="gemini-2.5-flash" class="rounded-[6px] border p-2 text-xs bg-white"></div>
                     <div class="flex flex-wrap gap-2 items-center"><button id="aiKeySave" type="button" class="bg-esap text-white px-3 py-1 rounded-[6px]">Guardar y activar</button><button id="aiKeyDel" type="button" class="bg-white border px-3 py-1 rounded-[6px]">Quitar clave</button></div>
-                    <p>⚠️ La clave se guarda solo mientras esta pestaña esté abierta y los datos de tus proyectos (nombres y presupuestos) se envían a la API de Anthropic. Úsalo solo en tu computador personal y con datos que puedas compartir; el uso de la API tiene costo.</p>
+                    <p>⚠️ La clave se guarda solo mientras esta pestaña esté abierta y los datos de tus proyectos (nombres y presupuestos) se envían a la API de Gemini. Úsalo solo en tu computador personal y con datos que puedas compartir; el uso de la API tiene costo.</p>
                 </div>
                 <div id="aiChat" class="h-96 overflow-y-auto space-y-3 bg-gray-50 p-4 rounded-[6px] border">
                     <div class="flex gap-2"><div class="w-7 h-7 shrink-0 rounded-full bg-esap text-white flex items-center justify-center text-sm">🤖</div><div class="ai-bot rounded-[12px] p-3 max-w-[90%]"><p class="text-xs uppercase font-bold text-esap mb-1">Resumen automático del informe</p><div id="conclusionsText" class="text-sm space-y-3"></div></div></div>
@@ -565,6 +572,7 @@
         let histChartInstance = null;
         let secChartInstance = null;
         let boxChartInstance = null;
+        let ojivaChartInstance = null;
         let selectedMunicipality = "Popayán";
         let isSimulated = false;
         function setSimulated(v) { isSimulated = !!v; const b = document.getElementById('simBanner'); if (b) b.classList.toggle('hidden', !isSimulated); }
@@ -1065,12 +1073,16 @@
             return 'No estoy seguro de haber entendido. Puedo ayudarte con: significado de las medidas (media, mediana, desviación, cuartiles), proyectos críticos, atípicos, modalidades, presupuesto total y recomendaciones de gestión. Si activas "⚙️ IA avanzada" puedo responder preguntas abiertas con un modelo de lenguaje.';
         }
         async function aiRemote(q, c) {
-            const key = sessionStorage.getItem(AI_KEY), model = localStorage.getItem(AI_MODEL) || 'claude-sonnet-5-5';
+            let model = localStorage.getItem(AI_MODEL) || 'gemini-2.5-flash'; if (/^claude/i.test(model)) model = 'gemini-2.5-flash';
+            const key = sessionStorage.getItem(AI_KEY);
             const system = 'Eres un asistente experto en estadística descriptiva y administración pública territorial colombiana. Respondes en español, claro y breve, a preguntas sobre los resultados de un simulador estadístico de proyectos de inversión pública. Usa SOLO las cifras del contexto; si algo no está en el contexto, dilo. Explica los conceptos estadísticos de forma sencilla y da recomendaciones de gestión pública prudentes, sin inventar normas.\n\nCONTEXTO DEL INFORME:\n' + aiCtxText(c);
-            const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-                body: JSON.stringify({ model, max_tokens: 1000, system, messages: [...aiHistory.slice(-8), { role: 'user', content: q }] }) });
+            const contents = [...aiHistory.slice(-8), { role: 'user', content: q }].map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
+            const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+                body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { maxOutputTokens: 2048 } }) });
             const j = await r.json(); if (!r.ok) throw new Error((j.error && j.error.message) || r.status);
-            return j.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+            const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+            const out = parts.map(p => p.text || '').join('\n').trim(); if (!out) throw new Error('Respuesta vacía de Gemini');
+            return out;
         }
         function aiAdd(role, html) {
             const chat = $('aiChat'), u = role === 'user', el = document.createElement('div');
@@ -1087,7 +1099,7 @@
             aiHistory.push({ role: 'user', content: q }, { role: 'assistant', content: ans });
         }
         function aiRefreshMode() {
-            $('aiModeLabel').textContent = aiHasKey() ? 'Modo IA avanzada (Claude) activo · responde con el contexto de tus resultados' : 'Modo local: responde con reglas sobre los resultados calculados, sin conexión';
+            $('aiModeLabel').textContent = aiHasKey() ? 'Modo IA avanzada (Gemini) activo · responde con el contexto de tus resultados' : 'Modo local: responde con reglas sobre los resultados calculados, sin conexión';
             $('aiChips').innerHTML = ['¿Qué significan la media y la mediana?', '¿Qué tan dispersos están los datos?', '¿Hay valores atípicos?', '¿Qué proyectos están críticos?', 'Resumen por modalidad', '¿Qué recomiendas hacer?'].map(t => `<button type="button" class="ai-chip text-xs bg-blue-50 text-esap border border-blue-200 rounded-full px-3 py-1 hover:bg-blue-100">${t}</button>`).join('');
         }
         $('aiSend').addEventListener('click', () => aiAsk($('aiInput').value));
@@ -1095,7 +1107,7 @@
         $('aiChips').addEventListener('click', (e) => { if (e.target.classList.contains('ai-chip')) aiAsk(e.target.textContent); });
         $('aiClearBtn').addEventListener('click', () => { const ch = $('aiChat'); while (ch.children.length > 1) ch.lastChild.remove(); aiHistory = []; });
         $('aiSettingsBtn').addEventListener('click', () => $('aiSettings').classList.toggle('hidden'));
-        $('aiKeySave').addEventListener('click', () => { const k = $('aiKey').value.trim(); if (!k) return; try { sessionStorage.setItem(AI_KEY, k); localStorage.setItem(AI_MODEL, $('aiModel').value.trim() || 'claude-sonnet-5-5'); } catch (e) {} $('aiKey').value = ''; aiRefreshMode(); notify('IA avanzada activada.'); });
+        $('aiKeySave').addEventListener('click', () => { const k = $('aiKey').value.trim(); if (!k) return; try { sessionStorage.setItem(AI_KEY, k); localStorage.setItem(AI_MODEL, $('aiModel').value.trim() || 'gemini-2.5-flash'); } catch (e) {} $('aiKey').value = ''; aiRefreshMode(); notify('IA avanzada activada.'); });
         $('aiKeyDel').addEventListener('click', () => { try { sessionStorage.removeItem(AI_KEY); } catch (e) {} aiRefreshMode(); notify('Clave eliminada: vuelve el modo local.'); });
         aiRefreshMode();
 
@@ -1222,7 +1234,7 @@
             }
 
             // Hoja 4: gráficos (pestaña 3)
-            const charts = [[histChartInstance, 'chart1Title'], [secChartInstance, 'chart2Title'], [boxChartInstance, 'chart3Title']]
+            const charts = [[histChartInstance, 'chart1Title'], [secChartInstance, 'chart2Title'], [boxChartInstance, 'chart3Title'], [ojivaChartInstance, 'chart4Title']]
                 .filter(([ch]) => ch && ch.canvas && ch.canvas.width > 0 && ch.canvas.offsetParent !== null);
             if (charts.length) {
                 const ws4 = wb.addWorksheet('Gráficos'); ws4.getColumn(1).width = 90;
@@ -1358,26 +1370,30 @@
                 // Configurar encabezado de tabla cualitativa
                 document.getElementById('freqTableHead').innerHTML = `
                     <tr>
+                        <th class="px-4 py-2 text-center">N°</th>
                         <th class="px-4 py-2">Categoría / Modalidad</th>
                         <th class="px-4 py-2">Frecuencia Absoluta (f<sub>i</sub>)</th>
                         <th class="px-4 py-2">Frec. Acumulada (F<sub>i</sub>)</th>
                         <th class="px-4 py-2">Frecuencia Relativa (h<sub>i</sub>)</th>
+                        <th class="px-4 py-2">Frec. Rel. Acumulada (H<sub>i</sub>)</th>
                         <th class="px-4 py-2">Porcentaje (%)</th>
                     </tr>
                 `;
 
                 let acuF = 0;
-                sortedCategories.forEach(cat => {
+                sortedCategories.forEach((cat, idx) => {
                     let fi = counts[cat];
                     acuF += fi;
                     let hi = fi / nTotal;
                     let pct = (hi * 100).toFixed(2);
-                    freqTableRowsCache.push(`<tr>
-                        <td class="px-4 py-2 border-b font-semibold text-esap">${esc(cat)}</td>
-                        <td class="px-4 py-2 border-b">${fi}</td>
-                        <td class="px-4 py-2 border-b">${acuF}</td>
-                        <td class="px-4 py-2 border-b">${hi.toFixed(4)}</td>
-                        <td class="px-4 py-2 border-b font-bold">${pct}%</td>
+                    freqTableRowsCache.push(`<tr class="${idx % 2 === 0 ? 'bg-blue-100' : 'bg-white'}">
+                        <td class="px-4 py-2 border border-[#dfe3e8] text-center font-semibold">${idx + 1}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8] font-semibold text-esap">${esc(cat)}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8]">${fi}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8]">${acuF}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8]">${hi.toFixed(4)}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8]">${(acuF / nTotal).toFixed(4)}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8] font-bold">${pct}%</td>
                     </tr>`);
                 });
 
@@ -1414,6 +1430,7 @@
                 // Ajustar UI de gráficos cualitativos
                 document.getElementById('chartTypeSelectorContainer').classList.add('hidden');
                 document.getElementById('boxplotCard').classList.add('hidden');
+                document.getElementById('ojivaCard').classList.add('hidden');
                 document.getElementById('chartsContainer').className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
                 document.getElementById('chart1Title').innerText = "Distribución de Frecuencia (Diagrama de Barras)";
                 document.getElementById('chart2Title').innerText = "Proporción Porcentual (Gráfico de Pastel)";
@@ -1433,7 +1450,8 @@
 
                 document.getElementById('chartTypeSelectorContainer').classList.remove('hidden');
                 document.getElementById('boxplotCard').classList.remove('hidden');
-                document.getElementById('chartsContainer').className = 'grid grid-cols-1 md:grid-cols-3 gap-6';
+                document.getElementById('ojivaCard').classList.remove('hidden');
+                document.getElementById('chartsContainer').className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
                 document.getElementById('chart1Title').innerText = "Histograma de Frecuencias";
                 document.getElementById('chart2Title').innerText = "Distribución Secundaria";
 
@@ -1463,7 +1481,12 @@
                 const isCurrency = targetCol.includes('presupuesto');
                 const isPct = targetCol === 'porcentaje_avance';
                 const fmt = (v) => isCurrency ? formatCOP(v) : (v.toLocaleString('es-CO', {maximumFractionDigits: 2}) + (isPct ? '%' : ''));
-                lastStats = [['Variable', varLabel], ['Observaciones (n)', n], ['Mínimo', fmt(min)], ['Q1', fmt(q1)], ['Mediana', fmt(median)], ['Q3', fmt(q3)], ['Máximo', fmt(max)], ['Media', fmt(mean)], ['Desviación estándar (muestral, n−1)', fmt(stdDev)], ['Coef. de variación', coefVar.toFixed(2) + '%']];
+                // Moda para datos agrupados: Mo = Li + c·d1/(d1+d2) sobre el intervalo modal
+                const freqsArr = intervals.map(i => i.freq), maxF = Math.max(...freqsArr), mi = freqsArr.indexOf(maxF), nModal = freqsArr.filter(f => f === maxF).length;
+                const d1 = maxF - (mi > 0 ? freqsArr[mi - 1] : 0), d2 = maxF - (mi < k - 1 ? freqsArr[mi + 1] : 0);
+                const modaVal = (d1 + d2) === 0 ? intervals[mi].mark : intervals[mi].lower + c * d1 / (d1 + d2);
+                const modaInv = `[${fmt(intervals[mi].lower)} - ${fmt(intervals[mi].upper)}${mi === k - 1 ? ']' : ')'}`;
+                lastStats = [['Variable', varLabel], ['Observaciones (n)', n], ['Mínimo', fmt(min)], ['Q1', fmt(q1)], ['Mediana', fmt(median)], ['Q3', fmt(q3)], ['Máximo', fmt(max)], ['Media', fmt(mean)], ['Moda', fmt(modaVal)], ['Frecuencia de la moda', maxF + ' (' + (maxF / n * 100).toFixed(2) + '%) en el intervalo ' + modaInv], ['Número de intervalos (k)', k], ['Desviación estándar (muestral, n−1)', fmt(stdDev)], ['Coef. de variación', coefVar.toFixed(2) + '%']];
                 setInterp(buildInterp({ varLabel, n, min, max, mean, median, stdDev, q1, q3, fmt }, numValues));
 
                 cardsGrid.innerHTML = `
@@ -1482,6 +1505,15 @@
                         <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
                             <p class="font-bold text-amber-300">🎯 Punto Medio</p>
                             <p class="mt-1">Valor central: el <strong>50%</strong> de los datos está por debajo y el otro <strong>50%</strong> por encima de esta cifra.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 card-surface border border-[#dfe3e8] border-l-4 border-l-esap relative group cursor-pointer">
+                        <p class="text-xs text-gray-600">Moda</p>
+                        <p class="text-md font-bold text-esap mt-1">${fmt(modaVal)}</p>
+                        <div class="interactive-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2.5 shadow-xl z-20 text-center">
+                            <p class="font-bold text-amber-300">🔁 Valor más frecuente</p>
+                            <p class="mt-1">Se estima con la fórmula de datos agrupados sobre el intervalo modal <strong>${modaInv}</strong> (${maxF} proyectos).${nModal > 1 ? ' Hay ' + nModal + ' intervalos empatados; se toma el primero.' : ''}</p>
                         </div>
                     </div>
 
@@ -1538,11 +1570,13 @@
 
                 document.getElementById('freqTableHead').innerHTML = `
                     <tr>
+                        <th class="px-4 py-2 text-center">N° Intervalo</th>
                         <th class="px-4 py-2">Intervalo de Clase</th>
                         <th class="px-4 py-2">Marca de Clase (x<sub>i</sub>)</th>
                         <th class="px-4 py-2">Frecuencia Absoluta (f<sub>i</sub>)</th>
                         <th class="px-4 py-2">Frec. Acumulada (F<sub>i</sub>)</th>
                         <th class="px-4 py-2">Frecuencia Relativa (h<sub>i</sub>)</th>
+                        <th class="px-4 py-2">Frec. Rel. Acumulada (H<sub>i</sub>)</th>
                         <th class="px-4 py-2">Porcentaje (%)</th>
                     </tr>
                 `;
@@ -1551,13 +1585,15 @@
                 intervals.forEach((inv, idx) => {
                     acuF += inv.freq;
                     let rel = inv.freq / n;
-                    freqTableRowsCache.push(`<tr>
-                        <td class="px-4 py-2 border-b font-medium">[${fmt(inv.lower)} - ${fmt(inv.upper)}${idx === intervals.length - 1 ? ']' : ')'}</td>
-                        <td class="px-4 py-2 border-b">${fmt(inv.mark)}</td>
-                        <td class="px-4 py-2 border-b">${inv.freq}</td>
-                        <td class="px-4 py-2 border-b">${acuF}</td>
-                        <td class="px-4 py-2 border-b">${rel.toFixed(4)}</td>
-                        <td class="px-4 py-2 border-b font-bold">${(rel * 100).toFixed(2)}%</td>
+                    freqTableRowsCache.push(`<tr class="${idx % 2 === 0 ? 'bg-blue-100' : 'bg-white'}">
+                        <td class="px-4 py-2 border border-[#dfe3e8] text-center font-semibold">${idx + 1}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8] font-medium">[${fmt(inv.lower)} - ${fmt(inv.upper)}${idx === intervals.length - 1 ? ']' : ')'}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8]">${fmt(inv.mark)}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8]">${inv.freq}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8]">${acuF}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8]">${rel.toFixed(4)}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8]">${(acuF / n).toFixed(4)}</td>
+                        <td class="px-4 py-2 border border-[#dfe3e8] font-bold">${(rel * 100).toFixed(2)}%</td>
                     </tr>`);
                 });
                 renderFreqTablePage();
@@ -1584,8 +1620,8 @@
         const yFreq = { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Frecuencia absoluta' } };
         const xAxis = (t) => ({ ticks: { maxRotation: 60, font: { size: 9 } }, title: { display: true, text: t } });
         function destroyCharts() {
-            [histChartInstance, secChartInstance, boxChartInstance].forEach(c => c && c.destroy());
-            histChartInstance = secChartInstance = boxChartInstance = null;
+            [histChartInstance, secChartInstance, boxChartInstance, ojivaChartInstance].forEach(c => c && c.destroy());
+            histChartInstance = secChartInstance = boxChartInstance = ojivaChartInstance = null;
         }
 
         // Plugin propio: muestra el valor sobre las barras y el % dentro de las porciones
@@ -1683,6 +1719,19 @@
                             tooltip: { callbacks: { title: (it) => fullLabels[it[0].dataIndex], label: fTip } } } } };
             }
             secChartInstance = new Chart(document.getElementById('secondaryChart'), cfg);
+
+            // Ojiva (frecuencia acumulada "menor que" + % acumulado en el eje derecho)
+            const limits = [intervals[0].lower, ...intervals.map(i => i.upper)];
+            let accO = 0; const cumFreqs = [0, ...freqs.map(f => accO += f)];
+            ojivaChartInstance = new Chart(document.getElementById('ojivaChart'), {
+                type: 'line',
+                data: { labels: limits.map(axisFmt), datasets: [{ label: 'Frecuencia acumulada', data: cumFreqs, borderColor: '#002D62', backgroundColor: 'rgba(0,45,98,0.12)', fill: true, tension: 0, pointRadius: 3, pointBackgroundColor: '#D4AF37' }] },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { title: (it) => 'Menos de ' + fmt(limits[it[0].dataIndex]), label: (ctx) => ` ${ctx.raw} proyecto${ctx.raw === 1 ? '' : 's'} acumulado${ctx.raw === 1 ? '' : 's'} (${((ctx.raw / n) * 100).toFixed(1)}%)` } } },
+                    scales: { y: { beginAtZero: true, max: n, ticks: { precision: 0 }, title: { display: true, text: 'Frecuencia acumulada' } },
+                        y2: { position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false }, ticks: { callback: (v) => v + '%' }, title: { display: true, text: '% acumulado' } },
+                        x: xAxis('Límite superior del intervalo') } }
+            });
 
             // Boxplot (si el plugin no cargó, el resto de la página sigue funcionando)
             try {
@@ -1783,7 +1832,7 @@
             const x = t.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, t.width, t.height); x.drawImage(cv, 0, 0);
             const a = document.createElement('a'); a.href = t.toDataURL('image/png'); a.download = `${name}_${selectedMunicipality}.png`; a.click();
         }
-        [['histogramChart', 'histograma'], ['secondaryChart', 'grafico_secundario'], ['boxplotChart', 'boxplot']].forEach(([id, name]) => {
+        [['histogramChart', 'histograma'], ['secondaryChart', 'grafico_secundario'], ['boxplotChart', 'boxplot'], ['ojivaChart', 'ojiva']].forEach(([id, name]) => {
             const cv = document.getElementById(id), host = cv.parentElement, b = document.createElement('button');
             b.textContent = '⬇ Descargar PNG'; b.className = 'no-print block mx-auto mb-2 text-xs text-esap border border-[#dfe3e8] rounded-[6px] px-2 py-0.5 hover:bg-gray-50';
             b.onclick = () => downloadCanvasPNG(cv, name); host.parentElement.insertBefore(b, host);
